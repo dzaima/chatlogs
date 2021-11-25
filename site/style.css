@@ -1,0 +1,259 @@
+body {
+  scrollbar-color: #666 #333; /* firefox */
+  height: 100%;
+  overflow-y: scroll; /* don't randomly reposition everything when a scrollbar appears */
+}
+
+
+
+.fr {
+  display: inline-flex;
+  flex-direction:row;
+}
+.fc {
+  display:flex;
+  flex-direction:column;
+}
+
+
+
+body.dark input {
+  background-color: #333;
+  color: #D2D2D2;
+}
+body.dark .removed {
+  color: #aaa;
+}
+
+
+.arr {
+  font-family: BQN386;
+  background-color: #444;
+  border-radius: 5px;
+  padding: 2px 12px 2px 12px;
+}
+
+.reply {
+  float: left;
+}
+
+.msg {
+  font-size: 11.7px;
+  font-family: Verdana,Arial,sans-serif;
+  padding-top: 3px;
+}
+.user {
+  width: 10%;
+  text-align: right;
+  padding: 4.5px;
+  display: inline-block;
+  vertical-align: top;
+}
+.user > a {
+  font-size: .8em;
+  height: 12px;
+  display: block;
+  overflow: hidden;
+}
+.mcont {
+  width: 87%;
+  background-color: #505C63;
+}
+.mcont.me {
+  background-color: #333333;
+}
+.opt {
+  width: 16px;
+  height: 100%;
+}
+.time {
+  background-color: #6C7C86;
+  font-size: 8px;
+  color: #D3D3D3;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  float: right;
+  padding: 1px 3px;
+  position: relative;
+  border-radius: 2px;
+  margin-right: 2px;
+  margin-left: 10px;
+}
+
+
+code,pre {
+  background-color: #222222; /*#637077*/
+  border-radius: 2px;
+  font-family: BQN386;
+  overflow: auto;
+}
+code {
+  padding: 2px;
+}
+pre {
+  line-height: 1;
+  padding: 5px;
+}
+pre code {
+  padding: 5px;
+  background-color: transparent;
+}
+.src {
+  overflow-wrap: anywhere;
+  padding: 4.5px;
+  padding-right: 10px;
+  line-height: 1.8;
+}
+
+
+p {
+  margin-block: 0;
+}
+
+
+
+
+
+img.user-image {
+  max-height: 300px;
+  max-width: 300px;
+  overflow: hidden;
+  margin: 5px 0px;
+}
+
+.ob-post {
+  background-color: #76848B;
+  color: #D3D3D3;
+  padding: 0.8em 1.5em;
+}
+.ob-post-votes {
+  background-color: #eee;
+  color: #555;
+  padding: 4px 4px 5px;
+  font-weight: bold;
+  min-width: 24px;
+  text-align: center;
+  float: left;
+  margin-right: 5px;
+}
+.ob-post-title {
+  padding-top: 3px;
+  font-weight: bold;
+  font-size: 1.3em;
+  margin-left: 37px;
+}
+img.ob-post-siteicon {
+  float: right;
+}
+.ob-post-body img.user-gravatar32 {
+  margin: 3px 5px 0px 0px;
+}
+.onebox .user-gravatar32 {
+  float: left;
+}
+.onebox img {
+  background-color: #FFF !important;
+}
+.user-gravatar32 {
+  margin: 0 auto;
+  height: 32px;
+  width: 32px;
+}
+.ob-post-tag, .tag {
+  background-color: #666666 !important;
+  color: #D3D3D3 !important;
+  border-color: #333 !important;
+}
+.ob-post-tag, .ob-user-tag {
+  font-size: 0.9em;
+  padding: 3px 4px;
+  border-width: 0px 1px 1px 0px;
+}
+
+.room-mini {
+  background-image: none !important;
+  border-color: #333;
+  background-color: #333 !important;
+  color: #eee !important;
+}
+.room-mini-header h3 {
+  margin: 1px 0px;
+}
+.room-mini {
+  width: 215px;
+  padding: 5px;
+  overflow: hidden;
+  position: relative;
+  border-radius: 5px;
+}
+.room-mini .room-mini-header .room-mini-description {
+  font-size: 0.8em;
+  line-height: 13px;
+  margin-top: 5px;
+}
+
+
+
+
+body.dark  { background-color: #383838; color: #D3D3D3; } body.dark  .mainArea { background-color: #202020; color: #D3D3D3; }
+body.black { background-color: #222222; color: #D3D3D3; } body.black .mainArea { background-color: #000000; color: #D3D3D3; }
+body.light { background-color: #f8f8f8; color: #000000; } body.light .mainArea { background-color: #ffffff; color: #000000; border: 1px solid #a9a9a9; }
+
+.mainArea {
+  font-family: DejaVu Sans Mono, Consolas, Monaco, Lucida Console, Liberation Mono, Bitstream Vera Sans Mono, Courier New, monospace;
+  font-size: 14px;
+  text-align: left;
+  box-sizing: border-box;
+  width:100%;
+  height:100%;
+  padding: .5em;
+  border:0;
+  margin:0;
+  resize:none;
+  overflow-y: auto;
+  display: block; /* for some reason otherwise the global scrollbar appears */
+}
+
+
+a {
+  color: #A7DBC6 !important; /* important to override onebox blue */
+  text-decoration: none;
+}
+button {
+  text-shadow: none;
+  vertical-align: middle;
+  text-align: center;
+}
+body.dt button {
+  background-color: #444;
+  color: #D3D3D3;
+  border-color: #333;
+}
+body.dt button[disabled] {
+  color: #808080;
+}
+
+
+
+@font-face {
+  font-family: "APL386";
+  src: url("APL386.ttf");
+}
+@font-face {
+  font-family: "BQN386";
+  src: url("BQN386.ttf");
+}
+
+
+
+::-webkit-scrollbar-button, ::-webkit-scrollbar-track {
+  display:none;
+}
+::-webkit-scrollbar-thumb {
+  background-color:#666;
+}
+::-webkit-scrollbar, ::-webkit-scrollbar-corner {
+  background-color:#333;
+}
+::-webkit-scrollbar-thumb {
+  border: none;
+}

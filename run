@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+java -Xmx512M -ea -cp 'pull.jar:lib/*' dz.Main

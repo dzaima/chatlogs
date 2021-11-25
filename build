@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+mkdir -p lib
+if [ ! -f lib/json-20201115.jar ]; then
+  echo "downloading json-20201115.jar"
+  curl -L 'https://search.maven.org/remotecontent?filepath=org/json/json/20201115/json-20201115.jar' > lib/json-20201115.jar
+fi
+if [ ! -f lib/jsoup-1.13.1.jar ]; then
+  echo "downloading jsoup-1.13.1.jar"
+  curl 'https://jsoup.org/packages/jsoup-1.13.1.jar' > lib/jsoup-1.13.1.jar
+fi
+
+rm -f pull.jar
+rm -rf classes
+mkdir -p classes
+javac -cp 'lib/*' -d classes $(find src -name '*.java')
+cd classes
+jar cvfe pull.jar dz.Main * > /dev/null
+mv pull.jar ../pull.jar
+cd ..
+rm -r classes
