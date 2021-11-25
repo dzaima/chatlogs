@@ -1,6 +1,6 @@
 # Array language chat logs
 
-Usage: download, and either manually use the files in `logs/`, or open `site/index.html` for simple searching.
+Usage: download (as logs are >100MB total), and either manually use the files in `logs/`, or open `site/index.html` for basic searching.
 
 Search: `a&b|c&d` will find all messages either containing both `a` and `b`, or `c` and `d`. Alternatively, prepending a space to the search string will match the following text exactly.
 
@@ -17,3 +17,5 @@ You may want to change the first two lines of `site/main.js` to your own StackEx
    That user must be joined to the rooms defined in the `mxRooms` array in `src/dz/Main.java`.
 
 2. `./build && ./run` (requires Java 8+)
+   
+   This will append to the old logs, so time taken will be proportional to the count of new messages. There are big pauses between API calls to not hit rate limiting though, so running with no new messages still takes 30s.
