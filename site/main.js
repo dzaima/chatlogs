@@ -27,7 +27,7 @@ function updateRooms() {
   let checked = allRooms.filter(c=>c.obj.checked);
   if (checked.some(c=>c.state==1)) return;
   
-  roomData = [];
+  currRooms = [];
   let todo = checked.every(c=>c.state==2)? upd : updateRooms;
   for (let room of checked) {
     if (room.state==0) {
@@ -40,14 +40,14 @@ function updateRooms() {
       });
     }
     if (room.state==2) {
-      roomData.push(room.loaded);
+      currRooms.push(room.loaded);
     }
   }
   todo();
 }
 
 var j;
-var roomData = [];
+var currRooms = [];
 
 async function showStatus(str) {
   console.log(str);
@@ -193,7 +193,7 @@ async function loadMx(path, name, roomid, next) {
 
 var matched;
 function upd() {
-  matched = roomData.flatMap(room => {
+  matched = currRooms.flatMap(room => {
     let leftMsgs = room.data;
     
     if (usr.value) leftMsgs = room.filterUsers(leftMsgs, usr.value);
@@ -223,6 +223,7 @@ function upd() {
     
     return leftMsgs;
   })
+  if (currRooms.length > 1) matched.sort((a,b)=>b.date-a.date);
   pam = ((matched.length-1)/psz|0)+1;
   page = 0;
   render();
