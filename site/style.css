@@ -94,7 +94,7 @@ pre {
   padding: 5px;
 }
 pre code {
-  padding: 5px;
+  padding: 0px;
   background-color: transparent;
 }
 .src {

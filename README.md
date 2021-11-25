@@ -2,9 +2,9 @@
 
 Usage: download, and either manually use the files in `logs/`, or open `site/index.html` for simple searching.
 
-Search: `a&b|c&d` will find all messages either containing both `a` and `b`, or `c` and `d`. Alternatively, prepending a space will match `a&b|c&d` exactly.
+Search: `a&b|c&d` will find all messages either containing both `a` and `b`, or `c` and `d`. Alternatively, prepending a space to the search string will match the following text exactly.
 
-You may want to change the first two lines of `main.js` to your own StackExchange/Matrix IDs, so that your messages could be colored differently.
+You may want to change the first two lines of `site/main.js` to your own StackExchange/Matrix IDs, so that your messages could be colored differently.
 
 ## Updating logs
 
