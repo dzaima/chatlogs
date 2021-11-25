@@ -156,7 +156,8 @@ async function loadMx(path, name, roomid, next) {
       m.textLower = m.text.toLowerCase()
       if (ct["m.relates_to"] && ct["m.relates_to"]["m.in_reply_to"]) {
         m.replyID = ct["m.relates_to"]["m.in_reply_to"].event_id;
-        m.html = `<a href="https://matrix.to/#/${roomid}/${m.replyID}" class="reply">${arrow}</a>${m.html.substring(m.html.indexOf("</mx-reply>")+11)}`;
+        let endIdx = m.html.indexOf("</mx-reply>");
+        m.html = `<a href="https://matrix.to/#/${roomid}/${m.replyID}" class="reply">${arrow}</a>${endIdx==-1? m.html : m.html.substring(endIdx+11)}`;
       }
       m.date = new Date(m.origin_server_ts);
     });

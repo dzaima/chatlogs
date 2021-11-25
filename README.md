@@ -6,6 +6,8 @@ Search: `a&b|c&d` will find all messages either containing both `a` and `b`, or 
 
 You may want to change the first two lines of `site/main.js` to your own StackExchange/Matrix IDs, so that your messages could be colored differently.
 
+`<body class="dark">` in `site/index.html` can be changed to `<body class="light">` for a light theme.
+
 ## Updating logs
 
 1. Make a file `mxToken` containing:
