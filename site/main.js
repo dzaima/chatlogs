@@ -1,5 +1,5 @@
-var me_se = 232772; // the number of your user page - https://chat.stackexchange.com/users/123456
-var me_mx = "@dzaima:matrix.org"; // your matrix ID
+var me_se = -1; // the number of your user page - https://chat.stackexchange.com/users/123456
+var me_mx = "@example:matrix.org"; // your matrix ID
 
 var allRooms = [
   {state: 0, chr:'o', name:"SE/Orchard", fn: next=>loadSE("../logs/SE_orchard", "SE/Orchard", 52405, next)},
