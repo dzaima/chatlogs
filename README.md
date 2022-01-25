@@ -4,6 +4,8 @@ Usage: download (as logs are >100MB total), and either manually use the files in
 
 Search: `a&b|c&d` will find all messages either containing both `a` and `b`, or `c` and `d`. Alternatively, prepending a space to the search string will match the following text exactly.
 
+Clicking on the arrow left of a message will link you to it. For matrix messages, this will enter into a temporary view of the context (still in reverse-chronological order); middle-click or right-click→copy to get a matrix.to link.
+
 You may want to change the first two lines of `site/main.js` to your own StackExchange/Matrix IDs, so that your messages could be colored differently.
 
 `<body class="dark">` in `site/index.html` can be changed to `<body class="light">` for a light theme.

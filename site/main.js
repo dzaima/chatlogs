@@ -100,7 +100,7 @@ async function loadSE(path, name, roomid, next) {
 <div class="msg">
  <div class="user"><a href="https://chat.stackexchange.com/users/${m.userID}">${m.username}</a></div>
  <div class="mcont fr${me_se==m.userID?" me":""}">
-  <div class="fc"><a class="opt" href="https://chat.stackexchange.com/transcript/${roomid}?m=${m.msgID}#${m.msgID}"></a></div>
+  <div class="fc"><a class="opt" href="https://chat.stackexchange.com/transcript/${roomid}?m=${m.msgID}#${m.msgID}">▼</a></div>
   <div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
    <div class="time" title="${m.date}">${df(m.date)}</div>
    <div class="src">${m.html==""? '<span class="removed">(removed)</span>' : m.html}</div>
@@ -157,7 +157,7 @@ async function loadMx(path, name, roomid, next) {
       if (ct["m.relates_to"] && ct["m.relates_to"]["m.in_reply_to"]) {
         m.replyID = ct["m.relates_to"]["m.in_reply_to"].event_id;
         let endIdx = m.html.indexOf("</mx-reply>");
-        m.html = `<a href="https://matrix.to/#/${roomid}/${m.replyID}" class="reply">${arrow}</a>${endIdx==-1? m.html : m.html.substring(endIdx+11)}`;
+        m.html = `<a href="https://matrix.to/#/${roomid}/${m.replyID}" onclick="mxClick(event, this)" class="reply">${arrow}</a>${endIdx==-1? m.html : m.html.substring(endIdx+11)}`;
       }
       m.date = new Date(m.origin_server_ts);
     });
@@ -176,7 +176,7 @@ async function loadMx(path, name, roomid, next) {
 <div class="msg">
  <div class="user"><a href="https://matrix.to/#/${m.sender}">${m.username}</a></div>
  <div class="mcont fr${me_mx==m.sender?" me":""}">
-  <div class="fc"><a class="opt" href="https://matrix.to/#/${roomid}/${m.event_id}"></a></div>
+  <div class="fc"><a class="opt" onclick="mxClick(event, this)" href="https://matrix.to/#/${roomid}/${m.event_id}">▼</a></div>
   <div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
    <div class="time" title="${m.date}">${df(m.date)}</div>
    <div class="src">${m.html}</div>
@@ -192,14 +192,29 @@ async function loadMx(path, name, roomid, next) {
   req.send();
 }
 
+function mxClick(e, t) {
+  e.preventDefault();
+  let id = t.href.split("/").slice(-1)[0];
+  upd(false);
+  let pos = matched.findIndex(c=>c.event_id==id);
+  page = pos/psz | 0;
+  render();
+  let msg = msgList.children[pos%psz];
+  msg.focus();
+  msg.scrollIntoView();
+  let msgCont = msg.querySelector(".mcont");
+  msgCont.classList.add("highlighted");
+  setTimeout(() => msgCont.classList.remove("highlighted"), 600);
+}
+
 var matched;
-function upd() {
+function upd(filter = true) {
   matched = currRooms.flatMap(room => {
     let leftMsgs = room.data;
     
-    if (usr.value) leftMsgs = room.filterUsers(leftMsgs, usr.value);
+    if (filter && usr.value) leftMsgs = room.filterUsers(leftMsgs, usr.value);
     
-    if (txt.value) { // a&b|c&d
+    if (filter && txt.value) { // a&b|c&d
       let exp = txt.value.toLowerCase();
       if (exp[0]==' ') {
         exp = exp.substring(1);
@@ -239,7 +254,7 @@ function render() {
   <a class="arr" href="javascript:0" onclick="p(  -1)">&lt;</a>
   <a class="arr" href="javascript:0" onclick="p(   1)">&gt;</a>
   <a class="arr" href="javascript:0" onclick="p( 9e9)">»</a></div>`;
-  let res = `${arrows}Page ${page+1} of ${pam}; ${matched.length} found <span style="width:30px"></div>`;
+  let res = `${arrows}Page ${page+1} of ${pam}; ${matched.length} found <span style="width:30px" id="msgList"></div>`;
   for (let i = page*psz; i < Math.min((page+1)*psz, matched.length); i++) {
     let m = matched[i];
     res+= m.room.html(m);
