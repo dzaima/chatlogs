@@ -17,6 +17,7 @@ async function load() {
   for (let r of allRooms) r.obj = document.getElementById("chk-"+r.name);
   loadLnk();
   upd();
+  txt.focus();
 }
 
 function checkboxUpd() {
