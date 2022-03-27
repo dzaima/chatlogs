@@ -97,6 +97,9 @@ async function loadSE(path, name, roomid, next) {
       msgHas: (msg, txt) => {
         return msg.textLower.includes(txt) || msg.htmlLower.includes(txt);
       },
+      msgTest: (msg, regex) => {
+        return regex.test(msg.textLower) || regex.test(msg.htmlLower);
+      },
       html: (m) => `
 <div class="msg">
  <div class="user"><a href="https://chat.stackexchange.com/users/${m.userID}">${m.username}</a></div>
@@ -173,6 +176,9 @@ async function loadMx(path, name, roomid, next) {
       msgHas: (msg, txt) => {
         return msg.textLower.includes(txt) || msg.htmlLower.includes(txt);
       },
+      msgTest: (msg, regex) => {
+        return regex.test(msg.textLower) || regex.test(msg.htmlLower);
+      },
       html: (m) => `
 <div class="msg">
  <div class="user"><a href="https://matrix.to/#/${m.sender}">${m.username}</a></div>
@@ -220,6 +226,10 @@ function upd(filter = true) {
       if (exp[0]==' ') {
         exp = exp.substring(1);
         leftMsgs = leftMsgs.filter(c => room.msgHas(c, exp));
+      } else if (exp[0]=='/' && exp[exp.length-1]=='/') {
+        let regex = new RegExp(exp.substring(1, exp.length-1));
+        console.log(regex);
+        leftMsgs = leftMsgs.filter(c => room.msgTest(c, regex));
       } else {
         let ands = [];
         let ors = [];
