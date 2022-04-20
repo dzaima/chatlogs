@@ -4,11 +4,13 @@ var me_mx = "@example:matrix.org"; // your matrix ID
 var allRooms = [
   {state: 0, chr:'o', name:"SE/Orchard", fn: next=>loadSE("../logs/SE_orchard", "SE/Orchard", 52405, next)},
   {state: 0, chr:'k', name:"SE/ktree",   fn: next=>loadSE("../logs/SE_thektree", "SE/ktree", 52405, next)},
-  {state: 0, chr:'B', name:"mx/BQN",     fn: next=>loadMx("../logs/matrix_BQN", "mx/BQN", "!EjsgbQQNuTfHXQoiax:matrix.org", next)},
-  {state: 0, chr:'A', name:"mx/APL",     fn: next=>loadMx("../logs/matrix_APL", "mx/APL", "!TobkTZMOkZJCvcSvwq:matrix.org", next)},
-  {state: 0, chr:'K', name:"mx/k",       fn: next=>loadMx("../logs/matrix_k", "mx/k", "!TobkTZMOkZJCvcSvwq:matrix.org", next)},
-  {state: 0, chr:'M', name:"mx/main",    fn: next=>loadMx("../logs/matrix_main", "mx/main", "!TobkTZMOkZJCvcSvwq:matrix.org", next)},
-  {state: 0, chr:'O', name:"mx/offtopic",fn: next=>loadMx("../logs/matrix_offtopic", "mx/offtopic", "!TobkTZMOkZJCvcSvwq:matrix.org", next)},
+  {state: 0, chr:'B', name:"mx/BQN",     fn: next=>loadMx("../logs/matrix_BQN",      "mx/BQN",      "!EjsgbQQNuTfHXQoiax:matrix.org", next)},
+  {state: 0, chr:'A', name:"mx/APL",     fn: next=>loadMx("../logs/matrix_APL",      "mx/APL",      "!TobkTZMOkZJCvcSvwq:matrix.org", next)},
+  {state: 0, chr:'K', name:"mx/k",       fn: next=>loadMx("../logs/matrix_k",        "mx/k",        "!laJBzNwLcAOMAbAEeQ:matrix.org", next)},
+  {state: 0, chr:'M', name:"mx/main",    fn: next=>loadMx("../logs/matrix_main",     "mx/main",     "!cxPCiPlsXnajakSrqd:matrix.org", next)},
+  {state: 0, chr:'O', name:"mx/offtopic",fn: next=>loadMx("../logs/matrix_offtopic", "mx/offtopic", "!qfXqAqUHneTxiUgfrZ:matrix.org", next)},
+  {state: 0, chr:'O', name:"mx/J",       fn: next=>loadMx("../logs/matrix_j",        "mx/J",        "!wypKDDiZJdzZRWebIG:matrix.org", next)},
+  {state: 0, chr:'O', name:"mx/Nial",    fn: next=>loadMx("../logs/matrix_nial",     "mx/Nial",     "!YbHrHUqZIKqlLlqkVS:matrix.org", next)},
 ]
 async function load() {
   let html = "";
