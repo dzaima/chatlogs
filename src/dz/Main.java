@@ -23,6 +23,8 @@ public class Main {
     {"!TobkTZMOkZJCvcSvwq:matrix.org", "matrix_APL"},
     {"!laJBzNwLcAOMAbAEeQ:matrix.org", "matrix_k"},
     {"!cxPCiPlsXnajakSrqd:matrix.org", "matrix_main"},
+    {"!wypKDDiZJdzZRWebIG:matrix.org", "matrix_j"},
+    {"!YbHrHUqZIKqlLlqkVS:matrix.org", "matrix_nial"},
     {"!qfXqAqUHneTxiUgfrZ:matrix.org", "matrix_offtopic"},
   };
   
