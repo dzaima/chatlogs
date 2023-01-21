@@ -9,12 +9,12 @@ var allRooms = [
   {state: 0, chr:'K', name:"mx/k",       fn: next=>loadMx("../logs/matrix_k",        "mx/k",        "!laJBzNwLcAOMAbAEeQ:matrix.org", next)},
   {state: 0, chr:'M', name:"mx/main",    fn: next=>loadMx("../logs/matrix_main",     "mx/main",     "!cxPCiPlsXnajakSrqd:matrix.org", next)},
   {state: 0, chr:'O', name:"mx/offtopic",fn: next=>loadMx("../logs/matrix_offtopic", "mx/offtopic", "!qfXqAqUHneTxiUgfrZ:matrix.org", next)},
-  {state: 0, chr:'O', name:"mx/J",       fn: next=>loadMx("../logs/matrix_j",        "mx/J",        "!wypKDDiZJdzZRWebIG:matrix.org", next)},
-  {state: 0, chr:'O', name:"mx/Nial",    fn: next=>loadMx("../logs/matrix_nial",     "mx/Nial",     "!YbHrHUqZIKqlLlqkVS:matrix.org", next)},
+  {state: 0, chr:'J', name:"mx/J",       fn: next=>loadMx("../logs/matrix_j",        "mx/J",        "!wypKDDiZJdzZRWebIG:matrix.org", next)},
+  {state: 0, chr:'N', name:"mx/Nial",    fn: next=>loadMx("../logs/matrix_nial",     "mx/Nial",     "!YbHrHUqZIKqlLlqkVS:matrix.org", next)},
 ]
 async function load() {
   let html = "";
-  for (let {name} of allRooms) html+= `<input type="checkbox" onchange="checkboxUpd()" id="chk-${name}"></input>${name} `
+  for (let {name} of allRooms) html+= `<label><input type="checkbox" onchange="checkboxUpd()" id="chk-${name}"></input>${name}</label> `
   roomselect.innerHTML = html;
   for (let r of allRooms) r.obj = document.getElementById("chk-"+r.name);
   loadLnk();
