@@ -47,7 +47,7 @@ public class MxRoom {
       res.add(new MxEvent(this, (JSONObject) c));
     }
     Collections.reverse(res);
-    return new Chunk(res, o.getString("start"), o.getString("end"));
+    return new Chunk(res, o.getString("start"), o.optString("end", null));
   }
   
   @Deprecated
