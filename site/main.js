@@ -263,10 +263,10 @@ var psz = 100;
 var pam = 0;
 function render() {
   let arrows = `<div style="padding:8px 0px 5px 0px">
-  <a class="arr" href="javascript:0" onclick="p(-9e9)">«</a>
-  <a class="arr" href="javascript:0" onclick="p(  -1)">&lt;</a>
-  <a class="arr" href="javascript:0" onclick="p(   1)">&gt;</a>
-  <a class="arr" href="javascript:0" onclick="p( 9e9)">»</a></div>`;
+  <a class="arr" href="#" onclick="p(-9e9);return false;">«</a>
+  <a class="arr" href="#" onclick="p(  -1);return false;">&lt;</a>
+  <a class="arr" href="#" onclick="p(   1);return false;">&gt;</a>
+  <a class="arr" href="#" onclick="p( 9e9);return false;">»</a></div>`;
   let res = `${arrows}Page ${page+1} of ${pam}; ${matched.length} found <span style="width:30px" id="msgList"></div>`;
   for (let i = page*psz; i < Math.min((page+1)*psz, matched.length); i++) {
     let m = matched[i];
