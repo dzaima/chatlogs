@@ -11,6 +11,9 @@ var allRooms = [
   {state: 0, chr:'O', name:"mx/offtopic",fn: next=>loadMx("../logs/matrix_offtopic", "mx/offtopic", "!qfXqAqUHneTxiUgfrZ:matrix.org", next)},
   {state: 0, chr:'J', name:"mx/J",       fn: next=>loadMx("../logs/matrix_j",        "mx/J",        "!wypKDDiZJdzZRWebIG:matrix.org", next)},
   {state: 0, chr:'N', name:"mx/Nial",    fn: next=>loadMx("../logs/matrix_nial",     "mx/Nial",     "!YbHrHUqZIKqlLlqkVS:matrix.org", next)},
+  {state: 0, chr:'C', name:"mx/content", fn: next=>loadMx("../logs/matrix_content",  "mx/content",  "!gtyUrNfDifinXDOAsD:matrix.org", next)},
+  {state: 0, chr:'D', name:"mx/langdev", fn: next=>loadMx("../logs/matrix_langdev",  "mx/langdev",  "!WpdazzauuDxyGNAiCr:matrix.org", next)},
+  {state: 0, chr:'P', name:"mx/Kap",     fn: next=>loadMx("../logs/matrix_kap",      "mx/Kap",      "!OFniHvZeRnzLtnCiWw:dhsdevelopments.com", next)},
 ]
 async function load() {
   let html = "";

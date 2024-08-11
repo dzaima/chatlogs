@@ -26,6 +26,9 @@ public class Main {
     {"!wypKDDiZJdzZRWebIG:matrix.org", "matrix_j"},
     {"!YbHrHUqZIKqlLlqkVS:matrix.org", "matrix_nial"},
     {"!qfXqAqUHneTxiUgfrZ:matrix.org", "matrix_offtopic"},
+    {"!gtyUrNfDifinXDOAsD:matrix.org", "matrix_content"},
+    {"!WpdazzauuDxyGNAiCr:matrix.org", "matrix_langdev"},
+    {"!OFniHvZeRnzLtnCiWw:dhsdevelopments.com", "matrix_kap"},
   };
   
   // StackExchange config
@@ -33,7 +36,7 @@ public class Main {
   public static final int SE_SLEEP = 1000; // sleep time between API calls
   public static final String[][] seRooms = {
     {"52405", "SE_orchard"},
-    {"90748", "SE_thektree"},
+    // {"90748", "SE_thektree"},
   };
   
   
