@@ -2,22 +2,26 @@ var me_se = -1; // the number of your user page - https://chat.stackexchange.com
 var me_mx = "@example:matrix.org"; // your matrix ID
 
 var allRooms = [
-  {state: 0, chr:'o', name:"SE/Orchard", fn: next=>loadSE("../logs/SE_orchard", "SE/Orchard", 52405, next)},
-  {state: 0, chr:'k', name:"SE/ktree",   fn: next=>loadSE("../logs/SE_thektree", "SE/ktree", 52405, next)},
-  {state: 0, chr:'B', name:"mx/BQN",     fn: next=>loadMx("../logs/matrix_BQN",      "mx/BQN",      "!EjsgbQQNuTfHXQoiax:matrix.org", next)},
-  {state: 0, chr:'A', name:"mx/APL",     fn: next=>loadMx("../logs/matrix_APL",      "mx/APL",      "!TobkTZMOkZJCvcSvwq:matrix.org", next)},
-  {state: 0, chr:'K', name:"mx/k",       fn: next=>loadMx("../logs/matrix_k",        "mx/k",        "!laJBzNwLcAOMAbAEeQ:matrix.org", next)},
-  {state: 0, chr:'M', name:"mx/main",    fn: next=>loadMx("../logs/matrix_main",     "mx/main",     "!cxPCiPlsXnajakSrqd:matrix.org", next)},
-  {state: 0, chr:'O', name:"mx/offtopic",fn: next=>loadMx("../logs/matrix_offtopic", "mx/offtopic", "!qfXqAqUHneTxiUgfrZ:matrix.org", next)},
-  {state: 0, chr:'J', name:"mx/J",       fn: next=>loadMx("../logs/matrix_j",        "mx/J",        "!wypKDDiZJdzZRWebIG:matrix.org", next)},
-  {state: 0, chr:'N', name:"mx/Nial",    fn: next=>loadMx("../logs/matrix_nial",     "mx/Nial",     "!YbHrHUqZIKqlLlqkVS:matrix.org", next)},
-  {state: 0, chr:'C', name:"mx/content", fn: next=>loadMx("../logs/matrix_content",  "mx/content",  "!gtyUrNfDifinXDOAsD:matrix.org", next)},
-  {state: 0, chr:'D', name:"mx/langdev", fn: next=>loadMx("../logs/matrix_langdev",  "mx/langdev",  "!WpdazzauuDxyGNAiCr:matrix.org", next)},
-  {state: 0, chr:'P', name:"mx/Kap",     fn: next=>loadMx("../logs/matrix_kap",      "mx/Kap",      "!OFniHvZeRnzLtnCiWw:dhsdevelopments.com", next)},
+  {state: 0, chr:'o', name:"Orchard", fn: next=>loadSE("../logs/SE_orchard", "SE/Orchard", 52405, next)},
+  {state: 0, chr:'k', name:"ktree",   fn: next=>loadSE("../logs/SE_thektree", "SE/ktree", 52405, next)},
+  {state: 0, chr:'B', name:"BQN",     fn: next=>loadMx("../logs/matrix_BQN",      "mx/BQN",      "!EjsgbQQNuTfHXQoiax:matrix.org", next)},
+  {state: 0, chr:'A', name:"APL",     fn: next=>loadMx("../logs/matrix_APL",      "mx/APL",      "!TobkTZMOkZJCvcSvwq:matrix.org", next)},
+  {state: 0, chr:'K', name:"k",       fn: next=>loadMx("../logs/matrix_k",        "mx/k",        "!laJBzNwLcAOMAbAEeQ:matrix.org", next)},
+  {state: 0, chr:'M', name:"main",    fn: next=>loadMx("../logs/matrix_main",     "mx/main",     "!cxPCiPlsXnajakSrqd:matrix.org", next)},
+  {state: 0, chr:'O', name:"offtopic",fn: next=>loadMx("../logs/matrix_offtopic", "mx/offtopic", "!qfXqAqUHneTxiUgfrZ:matrix.org", next)},
+  {state: 0, chr:'J', name:"J",       fn: next=>loadMx("../logs/matrix_j",        "mx/J",        "!wypKDDiZJdzZRWebIG:matrix.org", next)},
+  {state: 0, chr:'N', name:"Nial",    fn: next=>loadMx("../logs/matrix_nial",     "mx/Nial",     "!YbHrHUqZIKqlLlqkVS:matrix.org", next)},
+  {state: 0, chr:'C', name:"content", fn: next=>loadMx("../logs/matrix_content",  "mx/content",  "!gtyUrNfDifinXDOAsD:matrix.org", next)},
+  {state: 0, chr:'D', name:"langdev", fn: next=>loadMx("../logs/matrix_langdev",  "mx/langdev",  "!WpdazzauuDxyGNAiCr:matrix.org", next)},
+  {state: 0, chr:'P', name:"Kap",     fn: next=>loadMx("../logs/matrix_kap",      "mx/Kap",      "!OFniHvZeRnzLtnCiWw:dhsdevelopments.com", next)},
 ]
 async function load() {
   let html = "";
-  for (let {name} of allRooms) html+= `<label><input type="checkbox" onchange="checkboxUpd()" id="chk-${name}"></input>${name}</label> `
+  for (let i = 0; i < allRooms.length; i++) {
+    let {name} = allRooms[i];
+    // if (i === allRooms.length>>1) html+= '<br>';
+    html+= `<label><input type="checkbox" onchange="checkboxUpd()" id="chk-${name}"></input>${name}</label> `;
+  }
   roomselect.innerHTML = html;
   for (let r of allRooms) r.obj = document.getElementById("chk-"+r.name);
   loadLnk();
@@ -57,151 +61,148 @@ var currRooms = [];
 
 async function showStatus(str) {
   console.log(str);
-  statusMsg.innerText = " | "+str;
+  statusMsg.innerText = str;
   await new Promise(r=>setTimeout(r, 0));
 }
 
+async function loadFile(path) {
+  let f = await fetch(path);
+  let b = await f.arrayBuffer();
+  return new TextDecoder().decode(b);
+}
 
 // https://github.com/Templarian/MaterialDesign/blob/master/LICENSE https://www.apache.org/licenses/LICENSE-2.0
 var arrow = '<svg width="12" height="12" viewBox="0 0 24 24"><path d="M11 17v-5h5v8h5V7H11V2l-7 7.5z" fill="#aaaaaa"></path></svg>'
 
 async function loadSE(path, name, roomid, next) {
   await showStatus(name+": Downloading history...");
-  let req = new XMLHttpRequest();
-  req.onload = async () => {
-    await showStatus(name+": Parsing JSON...")
-    let j = req.responseText.split('\n');
-    j.pop();
-    j = j.map(c=>JSON.parse(c));
-    
-    await showStatus(name+": Preparing data...")
-    j.forEach(c => {
-      c.userLower = c.username.toLowerCase();
-      c.htmlLower = c.html.toLowerCase();
-      c.textLower = c.text.toLowerCase();
-      if (c.replyID!=-1) {
-        c.html = `<a href="https://chat.stackexchange.com/transcript/${roomid}?m=${c.replyID}#${c.replyID}" class="reply">${arrow}</a>${c.html}`
-        c.htmlLower = `:${c.replyID} ${c.htmlLower}`;
-        c.textLower = `:${c.replyID} ${c.textLower}`;
+  
+  let j = (await loadFile(path)).split('\n');
+  
+  await showStatus(name+": Parsing JSON...");
+  j.pop();
+  j = j.map(c=>JSON.parse(c));
+  
+  await showStatus(name+": Preparing data...");
+  j.forEach(c => {
+    c.userLower = c.username.toLowerCase();
+    c.htmlLower = c.html.toLowerCase();
+    c.textLower = c.text.toLowerCase();
+    if (c.replyID!=-1) {
+      c.html = `<a href="https://chat.stackexchange.com/transcript/${roomid}?m=${c.replyID}#${c.replyID}" class="reply">${arrow}</a>${c.html}`
+      c.htmlLower = `:${c.replyID} ${c.htmlLower}`;
+      c.textLower = `:${c.replyID} ${c.textLower}`;
+    }
+    c.date = new Date(c.time*1000);
+  });
+  await showStatus(name+": Sorting...");
+  j.sort((a,b)=>b.date-a.date);
+  let room = {
+    data: j,
+    filterUsers: (prev, val) => {
+      if (/^[0-9-]+$/.test(val)) {
+        let test = +val;
+        return prev.filter(c=>c.userID == test);
+      } else {
+        let test = val.toLowerCase();
+        return prev.filter(c=>c.userLower.includes(test));
       }
-      c.date = new Date(c.time*1000);
-    });
-    await showStatus(name+": Sorting...")
-    j.sort((a,b)=>b.date-a.date);
-    let room = {
-      data: j,
-      filterUsers: (prev, val) => {
-        if (/^[0-9-]+$/.test(val)) {
-          let test = +val;
-          return prev.filter(c=>c.userID == test);
-        } else {
-          let test = val.toLowerCase();
-          return prev.filter(c=>c.userLower.includes(test));
-        }
-      },
-      msgHas: (msg, txt) => {
-        return msg.textLower.includes(txt) || msg.htmlLower.includes(txt);
-      },
-      msgTest: (msg, regex) => {
-        return regex.test(msg.textLower) || regex.test(msg.htmlLower);
-      },
-      html: (m) => `
+    },
+    msgHas: (msg, txt) => {
+      return msg.textLower.includes(txt) || msg.htmlLower.includes(txt);
+    },
+    msgTest: (msg, regex) => {
+      return regex.test(msg.textLower) || regex.test(msg.htmlLower);
+    },
+    html: (m) => `
 <div class="msg">
- <div class="user"><a href="https://chat.stackexchange.com/users/${m.userID}">${m.username}</a></div>
- <div class="mcont fr${me_se==m.userID?" me":""}">
-  <div class="fc"><a class="opt" href="https://chat.stackexchange.com/transcript/${roomid}?m=${m.msgID}#${m.msgID}">▼</a></div>
-  <div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
-   <div class="time" title="${m.date}">${df(m.date)}</div>
-   <div class="src">${m.html==""? '<span class="removed">(removed)</span>' : m.html}</div>
-  </div></div>
- </div>
+<div class="user"><a href="https://chat.stackexchange.com/users/${m.userID}">${m.username}</a></div>
+<div class="mcont fr${me_se==m.userID?" me":""}">
+<div class="fc"><a class="opt" href="https://chat.stackexchange.com/transcript/${roomid}?m=${m.msgID}#${m.msgID}">▼</a></div>
+<div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
+ <div class="time" title="${m.date}">${df(m.date)}</div>
+ <div class="src">${m.html==""? '<span class="removed">(removed)</span>' : m.html}</div>
+</div></div>
+</div>
 </div>`,
-    };
-    j.forEach(c => c.room = room);
-    await showStatus(name+": Loaded");
-    next(room);
   };
-  req.open("GET", path);
-  req.send();
+  j.forEach(c => c.room = room);
+  await showStatus(name+": Loaded");
+  next(room);
 }
 
 
 async function loadMx(path, name, roomid, next) {
-  showStatus(name+": Downloading history...");
-  let req = new XMLHttpRequest();
-  req.onload = async () => {
-    showStatus(name+": Parsing JSON...")
-    let j = req.responseText.split('\n');
-    j.pop();
-    j.pop();
-    let nameMap = JSON.parse(j.shift());
-    j = j.map(c=>JSON.parse(c));
-    
-    showStatus(name+": Preparing data...")
-    
-    let newJ = [];
-    let msgMap = {};
-    asdasd = j
-    j.forEach(c => {
-      msgMap[c.event_id] = c;
-      if (c.type!="m.room.message" || !c.content.body) return;
-      let rel = c.content["m.relates_to"];
-      if (rel && rel.rel_type == "m.replace") {
-        return;
-      } else {
-        newJ.push(c);
-      }
-    });
-    j = newJ;
-    
-    j.forEach(m => {
-      let ct = m.content;
-      m.text = ct.body;
-      m.html = ct.format=="org.matrix.custom.html"? ct.formatted_body : escapeHTML(m.text);
-      m.username = nameMap[m.sender];
-      if (!m.username) m.username = m.sender.split(':')[0].substring(1);
-      m.userLower = m.username.toLowerCase()
-      m.htmlLower = m.html.toLowerCase()
-      m.textLower = m.text.toLowerCase()
-      if (ct["m.relates_to"] && ct["m.relates_to"]["m.in_reply_to"]) {
-        m.replyID = ct["m.relates_to"]["m.in_reply_to"].event_id;
-        let endIdx = m.html.indexOf("</mx-reply>");
-        m.html = `<a href="https://matrix.to/#/${roomid}/${m.replyID}" onclick="mxClick(event, this)" class="reply">${arrow}</a>${endIdx==-1? m.html : m.html.substring(endIdx+11)}`;
-      }
-      m.date = new Date(m.origin_server_ts);
-    });
-    showStatus(name+": Sorting...");
-    j.sort((a,b)=>b.date-a.date);
-    let room = {
-      data: j,
-      filterUsers: (prev, val) => {
-        let test = val.toLowerCase();
-        return test[0]=='@'? prev.filter(c=>c.sender.includes(test)) : prev.filter(c=>c.userLower.includes(test));
-      },
-      msgHas: (msg, txt) => {
-        return msg.textLower.includes(txt) || msg.htmlLower.includes(txt);
-      },
-      msgTest: (msg, regex) => {
-        return regex.test(msg.textLower) || regex.test(msg.htmlLower);
-      },
-      html: (m) => `
+  await showStatus(name+": Downloading history...");
+  let j = (await loadFile(path)).split('\n');
+  await showStatus(name+": Parsing JSON...")
+  j.pop();
+  j.pop();
+  let nameMap = JSON.parse(j.shift());
+  j = j.map(c=>JSON.parse(c));
+  
+  await showStatus(name+": Preparing data...")
+  
+  let newJ = [];
+  let msgMap = {};
+  asdasd = j
+  j.forEach(c => {
+    msgMap[c.event_id] = c;
+    if (c.type!="m.room.message" || !c.content.body) return;
+    let rel = c.content["m.relates_to"];
+    if (rel && rel.rel_type == "m.replace") {
+      return;
+    } else {
+      newJ.push(c);
+    }
+  });
+  j = newJ;
+  
+  j.forEach(m => {
+    let ct = m.content;
+    m.text = ct.body;
+    m.html = ct.format=="org.matrix.custom.html"? ct.formatted_body : escapeHTML(m.text);
+    m.username = nameMap[m.sender];
+    if (!m.username) m.username = m.sender.split(':')[0].substring(1);
+    m.userLower = m.username.toLowerCase()
+    m.htmlLower = m.html.toLowerCase()
+    m.textLower = m.text.toLowerCase()
+    if (ct["m.relates_to"] && ct["m.relates_to"]["m.in_reply_to"]) {
+      m.replyID = ct["m.relates_to"]["m.in_reply_to"].event_id;
+      let endIdx = m.html.indexOf("</mx-reply>");
+      m.html = `<a href="https://matrix.to/#/${roomid}/${m.replyID}" onclick="mxClick(event, this)" class="reply">${arrow}</a>${endIdx==-1? m.html : m.html.substring(endIdx+11)}`;
+    }
+    m.date = new Date(m.origin_server_ts);
+  });
+  await showStatus(name+": Sorting...");
+  j.sort((a,b)=>b.date-a.date);
+  let room = {
+    data: j,
+    filterUsers: (prev, val) => {
+      let test = val.toLowerCase();
+      return test[0]=='@'? prev.filter(c=>c.sender.includes(test)) : prev.filter(c=>c.userLower.includes(test));
+    },
+    msgHas: (msg, txt) => {
+      return msg.textLower.includes(txt) || msg.htmlLower.includes(txt);
+    },
+    msgTest: (msg, regex) => {
+      return regex.test(msg.textLower) || regex.test(msg.htmlLower);
+    },
+    html: (m) => `
 <div class="msg">
- <div class="user"><a href="https://matrix.to/#/${m.sender}">${m.username}</a></div>
- <div class="mcont fr${me_mx==m.sender?" me":""}">
-  <div class="fc"><a class="opt" onclick="mxClick(event, this)" href="https://matrix.to/#/${roomid}/${m.event_id}">▼</a></div>
-  <div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
-   <div class="time" title="${m.date}">${df(m.date)}</div>
-   <div class="src">${m.html}</div>
-  </div></div>
- </div>
+<div class="user"><a href="https://matrix.to/#/${m.sender}">${m.username}</a></div>
+<div class="mcont fr${me_mx==m.sender?" me":""}">
+<div class="fc"><a class="opt" onclick="mxClick(event, this)" href="https://matrix.to/#/${roomid}/${m.event_id}">▼</a></div>
+<div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
+ <div class="time" title="${m.date}">${df(m.date)}</div>
+ <div class="src">${m.html}</div>
+</div></div>
+</div>
 </div>`,
-    };
-    j.forEach(c => c.room = room);
-    showStatus(name+": Loaded");
-    next(room);
   };
-  req.open("GET", path);
-  req.send();
+  j.forEach(c => c.room = room);
+  await showStatus(name+": Loaded");
+  next(room);
 }
 
 function mxClick(e, t) {
