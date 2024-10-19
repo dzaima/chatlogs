@@ -1,5 +1,6 @@
 var me_se = -1; // the number of your user page - https://chat.stackexchange.com/users/123456
 var me_mx = "@example:matrix.org"; // your matrix ID
+console.log("Variable 'matched' contains the filtered message objects");
 
 var allRooms = [
   {state: 0, chr:'o', name:"Orchard", fn: next=>loadSE("../logs/SE_orchard", "SE/Orchard", 52405, next)},
@@ -71,6 +72,26 @@ async function loadFile(path) {
   return new TextDecoder().decode(b);
 }
 
+function decompressPasteURI(str) {
+  try {
+    let arr = new Uint8Array([...atob(decodeURIComponent(str).replace(/@/g, '+'))].map(c=>c.charCodeAt()));
+    return new TextDecoder('utf-8').decode(pako.inflateRaw(arr));
+  } catch (e) {
+    return null;
+  }
+}
+
+function unpackPaste(html) {
+  let matches = [...html.matchAll(/\bhttps:\/\/dzaima\.github\.io\/paste\/?#0([a-zA-Z0-9#/@%]+)/g)];
+  if (matches.length == 0) return '';
+  matches = matches.map(c => {
+    let [code] = c[1].split(/#|%23/);
+    return !code? null : decompressPasteURI(code);
+  }).filter(c => c);
+  if (matches.length == 0) return '';
+  return '\n'+matches.join('\n');
+}
+
 // https://github.com/Templarian/MaterialDesign/blob/master/LICENSE https://www.apache.org/licenses/LICENSE-2.0
 var arrow = '<svg width="12" height="12" viewBox="0 0 24 24"><path d="M11 17v-5h5v8h5V7H11V2l-7 7.5z" fill="#aaaaaa"></path></svg>'
 
@@ -87,7 +108,7 @@ async function loadSE(path, name, roomid, next) {
   j.forEach(c => {
     c.userLower = c.username.toLowerCase();
     c.htmlLower = c.html.toLowerCase();
-    c.textSearch = c.text.toLowerCase();
+    c.textSearch = (c.text + unpackPaste(c.html)).toLowerCase();
     if (c.replyID!=-1) {
       c.html = `<a href="https://chat.stackexchange.com/transcript/${roomid}?m=${c.replyID}#${c.replyID}" class="reply">${arrow}</a>${c.html}`
       c.htmlLower = `:${c.replyID} ${c.htmlLower}`;
@@ -167,9 +188,9 @@ async function loadMx(path, name, roomid, next) {
     m.html = ct.format=="org.matrix.custom.html"? ct.formatted_body : escapeHTML(m.text);
     m.username = nameMap[m.sender];
     if (!m.username) m.username = m.sender.split(':')[0].substring(1);
-    m.userLower = m.username.toLowerCase()
-    m.htmlLower = m.html.toLowerCase()
-    m.textSearch = m.text.toLowerCase()
+    m.userLower = m.username.toLowerCase();
+    m.htmlLower = m.html.toLowerCase();
+    m.textSearch = (m.text + unpackPaste(m.html)).toLowerCase();
     if (ct["m.relates_to"] && ct["m.relates_to"]["m.in_reply_to"]) {
       m.replyID = ct["m.relates_to"]["m.in_reply_to"].event_id;
       let endIdx = m.html.indexOf("</mx-reply>");
