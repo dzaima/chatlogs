@@ -87,11 +87,11 @@ async function loadSE(path, name, roomid, next) {
   j.forEach(c => {
     c.userLower = c.username.toLowerCase();
     c.htmlLower = c.html.toLowerCase();
-    c.textLower = c.text.toLowerCase();
+    c.textSearch = c.text.toLowerCase();
     if (c.replyID!=-1) {
       c.html = `<a href="https://chat.stackexchange.com/transcript/${roomid}?m=${c.replyID}#${c.replyID}" class="reply">${arrow}</a>${c.html}`
       c.htmlLower = `:${c.replyID} ${c.htmlLower}`;
-      c.textLower = `:${c.replyID} ${c.textLower}`;
+      c.textSearch = `:${c.replyID} ${c.textSearch}`;
     }
     c.date = new Date(c.time*1000);
   });
@@ -109,10 +109,10 @@ async function loadSE(path, name, roomid, next) {
       }
     },
     msgHas: (msg, txt) => {
-      return msg.textLower.includes(txt) || msg.htmlLower.includes(txt);
+      return msg.textSearch.includes(txt) || msg.htmlLower.includes(txt);
     },
     msgTest: (msg, regex) => {
-      return regex.test(msg.textLower) || regex.test(msg.htmlLower);
+      return regex.test(msg.textSearch) || regex.test(msg.htmlLower);
     },
     html: (m) => `
 <div class="msg">
@@ -169,7 +169,7 @@ async function loadMx(path, name, roomid, next) {
     if (!m.username) m.username = m.sender.split(':')[0].substring(1);
     m.userLower = m.username.toLowerCase()
     m.htmlLower = m.html.toLowerCase()
-    m.textLower = m.text.toLowerCase()
+    m.textSearch = m.text.toLowerCase()
     if (ct["m.relates_to"] && ct["m.relates_to"]["m.in_reply_to"]) {
       m.replyID = ct["m.relates_to"]["m.in_reply_to"].event_id;
       let endIdx = m.html.indexOf("</mx-reply>");
@@ -186,10 +186,10 @@ async function loadMx(path, name, roomid, next) {
       return test[0]=='@'? prev.filter(c=>c.sender.includes(test)) : prev.filter(c=>c.userLower.includes(test));
     },
     msgHas: (msg, txt) => {
-      return msg.textLower.includes(txt) || msg.htmlLower.includes(txt);
+      return msg.textSearch.includes(txt) || msg.htmlLower.includes(txt);
     },
     msgTest: (msg, regex) => {
-      return regex.test(msg.textLower) || regex.test(msg.htmlLower);
+      return regex.test(msg.textSearch) || regex.test(msg.htmlLower);
     },
     html: (m) => `
 <div class="msg">
