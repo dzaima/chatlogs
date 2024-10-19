@@ -14,7 +14,7 @@ var allRooms = [
   {state: 0, chr:'C', name:"content", fn: next=>loadMx("../logs/matrix_content",  "mx/content",  "!gtyUrNfDifinXDOAsD:matrix.org", next)},
   {state: 0, chr:'D', name:"langdev", fn: next=>loadMx("../logs/matrix_langdev",  "mx/langdev",  "!WpdazzauuDxyGNAiCr:matrix.org", next)},
   {state: 0, chr:'P', name:"Kap",     fn: next=>loadMx("../logs/matrix_kap",      "mx/Kap",      "!OFniHvZeRnzLtnCiWw:dhsdevelopments.com", next)},
-]
+];
 async function load() {
   let html = "";
   for (let i = 0; i < allRooms.length; i++) {
@@ -121,7 +121,10 @@ async function loadSE(path, name, roomid, next) {
 <div class="fc"><a class="opt" href="https://chat.stackexchange.com/transcript/${roomid}?m=${m.msgID}#${m.msgID}">▼</a></div>
 <div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
  <div class="time" title="${m.date}">${df(m.date)}</div>
- <div class="src">${m.html==""? '<span class="removed">(removed)</span>' : m.html}</div>
+ <div class="src">${m.html==""? '<span class="removed">(removed)</span>' :
+  m.html
+  .replace(/(?<![>"])https:\/\/dzaima\.github\.io\/paste\/?#[a-zA-Z0-9#/@%]+\b/g, (c) => `<a href="${c}">https://dzaima.github.io/paste/…</a>`)
+}</div>
 </div></div>
 </div>
 </div>`,
@@ -234,7 +237,6 @@ function upd(filter = true) {
         leftMsgs = leftMsgs.filter(c => room.msgHas(c, exp));
       } else if (exp[0]=='/' && exp[exp.length-1]=='/') {
         let regex = new RegExp(exp.substring(1, exp.length-1));
-        console.log(regex);
         leftMsgs = leftMsgs.filter(c => room.msgTest(c, regex));
       } else {
         let ands = [];
