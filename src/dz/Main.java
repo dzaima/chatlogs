@@ -9,7 +9,9 @@ import org.jsoup.nodes.*;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.regex.*;
 
 public class Main {
   // Matrix config
@@ -133,6 +135,8 @@ public class Main {
       updateSERoom(room[0], room[1]);
     }
   }
+  
+  static Pattern FKEY_PATTERN = Pattern.compile("<input id=\"fkey\" name=\"fkey\" type=\"hidden\" value=\"([a-zA-Z0-9]+)\" />");
   public static void updateSERoom(String roomid, String filename) throws IOException {
     System.out.println("Updating SE room "+filename);
     Path path = LOG_PATH.resolve(filename);
@@ -145,15 +149,18 @@ public class Main {
       lines = new ArrayList<>();
       lastId = -1;
     }
+    String res = Tools.post("https://chat.stackexchange.com/rooms/52405/the-apl-orchard", new byte[0]);
+    Matcher match = FKEY_PATTERN.matcher(res);
+    match.find();
+    byte[] fkey = ("fkey="+match.group(1)).getBytes(StandardCharsets.UTF_8);
     
-    
-    int currId = new JSONObject(Tools.post("https://chat.stackexchange.com/chats/"+roomid+"/events?mode=Messages&msgCount=1", new byte[0])).getJSONArray("events").getJSONObject(0).getInt("message_id");
+    int currId = new JSONObject(Tools.post("https://chat.stackexchange.com/chats/"+roomid+"/events?mode=Messages&msgCount=1", fkey)).getJSONArray("events").getJSONObject(0).getInt("message_id");
     
     System.out.println("Goal: "+currId+"→"+lastId);
     ArrayList<String> reverse = new ArrayList<>();
     while (currId > lastId) {
       Tools.sleep(SE_SLEEP);
-      String p = Tools.post("https://chat.stackexchange.com/chats/"+roomid+"/events?before="+currId+"&mode=Messages&msgCount="+SE_BATCH, new byte[0]);
+      String p = Tools.post("https://chat.stackexchange.com/chats/"+roomid+"/events?before="+currId+"&mode=Messages&msgCount="+SE_BATCH, fkey);
       JSONObject o = new JSONObject(p);
       JSONArray e = o.getJSONArray("events");
       if (e.isEmpty()) break;
