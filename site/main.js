@@ -2,6 +2,9 @@ var me_se = 123456789; // the number of your user page - https://chat.stackexcha
 var me_mx = "@example:matrix.org"; // your matrix ID
 console.log("Variable 'matched' contains the filtered message objects");
 
+var currRooms = [];
+var matched;
+
 function mkRoom(name, roomRef, logFile, shortName, roomID, loader) {
   return {
     state: 0,
@@ -26,7 +29,8 @@ var allRooms = [
   mkRoom("langdev",    'D', "../logs/matrix_langdev",  "mx/langdev",  "!WpdazzauuDxyGNAiCr:matrix.org", loadMx),
   mkRoom("Kap",        'P', "../logs/matrix_kap",      "mx/Kap",      "!OFniHvZeRnzLtnCiWw:dhsdevelopments.com", loadMx),
 ];
-async function load() {
+
+async function setup() {
   let html = "";
   for (let i = 0; i < allRooms.length; i++) {
     let {name} = allRooms[i];
@@ -35,14 +39,14 @@ async function load() {
   }
   roomselect.innerHTML = html;
   for (let r of allRooms) r.obj = document.getElementById("chk-"+r.name);
-  loadLnk();
+  loadLink();
   filterRender();
   txt.focus();
 }
 
 function checkboxUpd() {
   updateRooms();
-  saveLnk();
+  saveLink();
 }
 function updateRooms() {
   let checked = allRooms.filter(c=>c.obj.checked);
@@ -66,9 +70,6 @@ function updateRooms() {
   }
   todo();
 }
-
-var j;
-var currRooms = [];
 
 async function showStatus(str) {
   console.log(str);
@@ -112,7 +113,7 @@ function transcriptLink(room, msgID) {
 // https://github.com/Templarian/MaterialDesign/blob/master/LICENSE https://www.apache.org/licenses/LICENSE-2.0
 var arrow = '<svg width="12" height="12" viewBox="0 0 24 24"><path d="M11 17v-5h5v8h5V7H11V2l-7 7.5z" fill="#aaaaaa"></path></svg>'
 
-function prepareMessages(room, getDate) {
+async function finishRoom(room, next, getDate) {
   room.data.forEach(msg => {
     msg.room = room;
     if (!msg.html) msg.html = '<span class="removed">(removed)</span>';
@@ -121,8 +122,6 @@ function prepareMessages(room, getDate) {
     msg.htmlLower = msg.html.toLowerCase();
     msg.textSearch = (msg.text + unpackPaste(msg.html)).toLowerCase();
   });
-}
-async function finishRoom(room, next) {
   let name = room.name;
   await showStatus(name+": Sorting...");
   room.data.sort((a,b)=>b.date-a.date);
@@ -131,8 +130,7 @@ async function finishRoom(room, next) {
 }
 
 async function loadSE(path, name, roomRef, roomid, next) {
-  await showStatus(name+": Downloading history...");
-  
+  await showStatus(name+": Downloading message log...");
   let j = (await loadFile(path)).split('\n');
   
   await showStatus(name+": Parsing JSON...");
@@ -152,21 +150,21 @@ async function loadSE(path, name, roomRef, roomid, next) {
     testMsgText: (msg, test) => test(msg.textSearch) || test(msg.htmlLower),
     isMsgMine: (msg) => me_se==msg.userID,
   };
-  prepareMessages(room, c => new Date(c.time*1000));
-  
   j.forEach(c => {
     c.id = c.msgID+"";
     if (c.replyID!=-1) {
       c.html = `<a ${transcriptLink(room, c.replyID)} class="reply">${arrow}</a>${c.html}`
-      c.textSearch = `:${c.replyID} ${c.textSearch}`;
+      c.text = `:${c.replyID} ${c.text}`;
     }
   });
-  await finishRoom(room, next);
+  
+  await finishRoom(room, next, c => new Date(c.time*1000));
 }
 
 async function loadMx(path, name, roomRef, roomid, next) {
-  await showStatus(name+": Downloading history...");
+  await showStatus(name+": Downloading message log...");
   let j = (await loadFile(path)).split('\n');
+  
   await showStatus(name+": Parsing JSON...")
   j.pop();
   j.pop();
@@ -199,22 +197,21 @@ async function loadMx(path, name, roomRef, roomid, next) {
     testMsgText: (msg, test) => test(msg.textSearch) || test(msg.htmlLower),
     isMsgMine: (msg) => me_mx==msg.sender,
   };
-  j.forEach(m => {
-    let ct = m.content;
-    m.id = m.event_id;
-    m.text = ct.body;
-    m.html = ct.format=="org.matrix.custom.html"? ct.formatted_body : escapeHTML(m.text);
-    m.username = nameMap[m.sender] || m.sender.split(':')[0].substring(1);
+  j.forEach(msg => {
+    let ct = msg.content;
+    msg.id = msg.event_id;
+    msg.text = ct.body;
+    msg.html = ct.format=="org.matrix.custom.html"? ct.formatted_body : escapeHTML(msg.text);
+    msg.username = nameMap[msg.sender] || msg.sender.split(':')[0].substring(1);
     
     if (ct["m.relates_to"] && ct["m.relates_to"]["m.in_reply_to"]) {
-      m.replyID = ct["m.relates_to"]["m.in_reply_to"].event_id;
-      let endIdx = m.html.indexOf("</mx-reply>");
-      m.html = `<a ${transcriptLink(room, m.replyID)} class="reply">${arrow}</a>${endIdx==-1? m.html : m.html.substring(endIdx+11)}`;
+      msg.replyID = ct["m.relates_to"]["m.in_reply_to"].event_id;
+      let endIdx = msg.html.indexOf("</mx-reply>");
+      msg.html = `<a ${transcriptLink(room, msg.replyID)} class="reply">${arrow}</a>${endIdx==-1? msg.html : msg.html.substring(endIdx+11)}`;
     }
   });
-  prepareMessages(room, (c) => new Date(c.origin_server_ts));
   
-  await finishRoom(room, next);
+  await finishRoom(room, next, (c) => new Date(c.origin_server_ts));
 }
 
 function inlineTranscript(e, roomChr, id) {
@@ -270,9 +267,17 @@ function parseSearch(str) {
         i++; // ')'
         return r;
       default:
-        let i0 = i;
-        while (i<str.length && !/[ "!|&()]/.test(str[i])) i++;
-        return m_loose(str.substring(i0, i));
+        let val = "";
+        while (i<str.length) {
+          if (str[i] == '\\' && ++i < str.length) {
+            val+= str[i++];
+          } else if (!/[ "!|&()]/.test(str[i])) {
+            val+= str[i++];
+          } else {
+            break;
+          }
+        }
+        return m_loose(val);
     }
   }
   function p_and() {
@@ -305,7 +310,6 @@ function parseSearch(str) {
 }
 
 
-var matched;
 function filterRender(filter = true) {
   matched = currRooms.flatMap(room => {
     let leftMsgs = room.data;
@@ -399,12 +403,12 @@ function escapeHTML(str) {
   return res;
 }
 
-function saveLnk(copyLink = false) {
+function saveLink(copyLink = false) {
   let b64 = "#s"+allRooms.filter(c=>c.obj.checked).map(c=>c.chr).join``+"#"+enc(txt.value)+"#"+enc(usr.value);
   history.pushState({}, "", b64);
   if (copyLink) copy(location.href.replace("/#", "#"));
 }
-function loadLnk() {
+function loadLink() {
   let hash = decodeURIComponent(location.hash.slice(1));
   let t = hash[0];
   if (t=='s') {
@@ -415,8 +419,8 @@ function loadLnk() {
     updateRooms();
   }
 }
-window.onload=load;
-window.onhashchange=loadLnk;
+window.onload=setup;
+window.onhashchange=loadLink;
 
 function enc(str) {
   if (!str) return str;
