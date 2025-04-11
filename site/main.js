@@ -125,8 +125,10 @@ function transcriptLink(room, msgID) {
   return `href="${room.msgLink(msgID)||"#"}" onclick="toInlineTranscript(event, ${stresc(room.roomRef)}, ${stresc(msgID)})"`
 }
 
-// https://github.com/Templarian/MaterialDesign/blob/master/LICENSE https://www.apache.org/licenses/LICENSE-2.0
-var arrow = '<svg width="12" height="12" viewBox="0 0 24 24"><path d="M11 17v-5h5v8h5V7H11V2l-7 7.5z" fill="#aaaaaa"></path></svg>'
+function replyPrefix(room, msg) {
+  // https://github.com/Templarian/MaterialDesign/blob/master/LICENSE https://www.apache.org/licenses/LICENSE-2.0
+  return `<a ${transcriptLink(room, msg.replyID)} class="reply"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M11 17v-5h5v8h5V7H11V2l-7 7.5z" fill="#aaaaaa"></path></svg></a>`;
+}
 
 async function finishRoom(room, next, getDate) {
   room.data.forEach(msg => {
@@ -165,11 +167,11 @@ async function loadSE(path, name, roomRef, roomid, next) {
     testMsgText: (msg, test) => test(msg.textSearch) || test(msg.htmlLower),
     isMsgMine: (msg) => me_se.includes(msg.userID),
   };
-  j.forEach(c => {
-    c.id = c.msgID+"";
-    if (c.replyID!=-1) {
-      c.html = `<a ${transcriptLink(room, c.replyID)} class="reply">${arrow}</a>${c.html}`
-      c.text = `:${c.replyID} ${c.text}`;
+  j.forEach(msg => {
+    msg.id = msg.msgID+"";
+    if (msg.replyID!=-1) {
+      msg.html = replyPrefix(room, msg) + msg.html
+      msg.text = `:${msg.replyID} ${msg.text}`;
     }
   });
   
@@ -222,7 +224,7 @@ async function loadMx(path, name, roomRef, roomid, next) {
     if (ct["m.relates_to"] && ct["m.relates_to"]["m.in_reply_to"]) {
       msg.replyID = ct["m.relates_to"]["m.in_reply_to"].event_id;
       let endIdx = msg.html.indexOf("</mx-reply>");
-      msg.html = `<a ${transcriptLink(room, msg.replyID)} class="reply">${arrow}</a>${endIdx==-1? msg.html : msg.html.substring(endIdx+11)}`;
+      msg.html = replyPrefix(room, msg) + (endIdx==-1? msg.html : msg.html.substring(endIdx+11));
     }
   });
   
