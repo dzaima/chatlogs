@@ -2,19 +2,29 @@ var me_se = -1; // the number of your user page - https://chat.stackexchange.com
 var me_mx = "@example:matrix.org"; // your matrix ID
 console.log("Variable 'matched' contains the filtered message objects");
 
+function mkRoom(name, roomRef, logFile, shortName, roomID, loader) {
+  return {
+    state: 0,
+    chr: roomRef,
+    name,
+    fn: next => loader(logFile, shortName, roomRef, roomID, next),
+  }
+}
+
 var allRooms = [
-  {state: 0, chr:'o', name:"Orchard", fn: next=>loadSE("../logs/SE_orchard", "SE/Orchard", 52405, next)},
-  {state: 0, chr:'k', name:"ktree",   fn: next=>loadSE("../logs/SE_thektree", "SE/ktree", 52405, next)},
-  {state: 0, chr:'B', name:"BQN",     fn: next=>loadMx("../logs/matrix_BQN",      "mx/BQN",      "!EjsgbQQNuTfHXQoiax:matrix.org", next)},
-  {state: 0, chr:'A', name:"APL",     fn: next=>loadMx("../logs/matrix_APL",      "mx/APL",      "!TobkTZMOkZJCvcSvwq:matrix.org", next)},
-  {state: 0, chr:'K', name:"k",       fn: next=>loadMx("../logs/matrix_k",        "mx/k",        "!laJBzNwLcAOMAbAEeQ:matrix.org", next)},
-  {state: 0, chr:'M', name:"main",    fn: next=>loadMx("../logs/matrix_main",     "mx/main",     "!cxPCiPlsXnajakSrqd:matrix.org", next)},
-  {state: 0, chr:'O', name:"offtopic",fn: next=>loadMx("../logs/matrix_offtopic", "mx/offtopic", "!qfXqAqUHneTxiUgfrZ:matrix.org", next)},
-  {state: 0, chr:'J', name:"J",       fn: next=>loadMx("../logs/matrix_j",        "mx/J",        "!wypKDDiZJdzZRWebIG:matrix.org", next)},
-  {state: 0, chr:'N', name:"Nial",    fn: next=>loadMx("../logs/matrix_nial",     "mx/Nial",     "!YbHrHUqZIKqlLlqkVS:matrix.org", next)},
-  {state: 0, chr:'C', name:"content", fn: next=>loadMx("../logs/matrix_content",  "mx/content",  "!gtyUrNfDifinXDOAsD:matrix.org", next)},
-  {state: 0, chr:'D', name:"langdev", fn: next=>loadMx("../logs/matrix_langdev",  "mx/langdev",  "!WpdazzauuDxyGNAiCr:matrix.org", next)},
-  {state: 0, chr:'P', name:"Kap",     fn: next=>loadMx("../logs/matrix_kap",      "mx/Kap",      "!OFniHvZeRnzLtnCiWw:dhsdevelopments.com", next)},
+  mkRoom("Orchard",    'o', "../logs/SE_orchard",      "SE/Orchard",  52405, loadSE),
+  mkRoom("ktree",      'k', "../logs/SE_thektree",     "SE/ktree",    52405, loadSE),
+  
+  mkRoom("BQN",        'B', "../logs/matrix_BQN",      "mx/BQN",      "!EjsgbQQNuTfHXQoiax:matrix.org", loadMx),
+  mkRoom("APL",        'A', "../logs/matrix_APL",      "mx/APL",      "!TobkTZMOkZJCvcSvwq:matrix.org", loadMx),
+  mkRoom("k",          'K', "../logs/matrix_k",        "mx/k",        "!laJBzNwLcAOMAbAEeQ:matrix.org", loadMx),
+  mkRoom("main",       'M', "../logs/matrix_main",     "mx/main",     "!cxPCiPlsXnajakSrqd:matrix.org", loadMx),
+  mkRoom("offtopic",   'O', "../logs/matrix_offtopic", "mx/offtopic", "!qfXqAqUHneTxiUgfrZ:matrix.org", loadMx),
+  mkRoom("J",          'J', "../logs/matrix_j",        "mx/J",        "!wypKDDiZJdzZRWebIG:matrix.org", loadMx),
+  mkRoom("Nial",       'N', "../logs/matrix_nial",     "mx/Nial",     "!YbHrHUqZIKqlLlqkVS:matrix.org", loadMx),
+  mkRoom("content",    'C', "../logs/matrix_content",  "mx/content",  "!gtyUrNfDifinXDOAsD:matrix.org", loadMx),
+  mkRoom("langdev",    'D', "../logs/matrix_langdev",  "mx/langdev",  "!WpdazzauuDxyGNAiCr:matrix.org", loadMx),
+  mkRoom("Kap",        'P', "../logs/matrix_kap",      "mx/Kap",      "!OFniHvZeRnzLtnCiWw:dhsdevelopments.com", loadMx),
 ];
 async function load() {
   let html = "";
