@@ -122,7 +122,7 @@ function transcriptLink(room, msgID) {
   function stresc(x) {
     return "'" + (x+"").replace('&','&amp;').replace(/["<>]/,''/* eh whatever */) + "'";
   }
-  return `href="${room.msgLink(msgID)}" onclick="toInlineTranscript(event, ${stresc(room.roomRef)}, ${stresc(msgID)})"`
+  return `href="${room.msgLink(msgID)||"#"}" onclick="toInlineTranscript(event, ${stresc(room.roomRef)}, ${stresc(msgID)})"`
 }
 
 // https://github.com/Templarian/MaterialDesign/blob/master/LICENSE https://www.apache.org/licenses/LICENSE-2.0
@@ -368,9 +368,10 @@ var psz = 100;
 var pam = 0;
 
 function messageHTML(msg, isMine) {
+  let userLink = msg.room.userLink(msg);
   return `
 <div class="msg">
-<div class="user"><a href="${msg.room.userLink(msg)}">${msg.username}</a></div>
+<div class="user"><a ${userLink? `href="${userLink}"` : ``}>${msg.username}</a></div>
 <div class="mcont fr${isMine?" me":""}">
 <div class="fc"><a class="opt" ${transcriptLink(msg.room, msg.id)}>▼</a></div>
 <div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
