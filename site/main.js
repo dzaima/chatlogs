@@ -1,9 +1,15 @@
-var me_se = 123456789; // the number of your user page - https://chat.stackexchange.com/users/123456789
-var me_mx = "@example:matrix.org"; // your matrix ID
+'use strict';
 console.log("Variable 'matched' contains the filtered message objects");
 
 var currRooms = [];
 var matched;
+
+function loadMe(name) {
+  let r = localStorage.getItem("me-"+name);
+  return r? r.split(";") : [];
+}
+var me_se = loadMe("se").map(c => +c);
+var me_mx = loadMe("mx");
 
 function mkRoom(name, roomRef, logFile, shortName, roomID, loader) {
   return {
@@ -31,6 +37,11 @@ var allRooms = [
 ];
 
 async function setup() {
+  var theme = localStorage.getItem("chatlogs-theme");
+  if (theme) {
+    document.body.classList.remove("dark");
+    document.body.classList.add(theme);
+  }
   let html = "";
   for (let i = 0; i < allRooms.length; i++) {
     let {name} = allRooms[i];
@@ -151,7 +162,7 @@ async function loadSE(path, name, roomRef, roomid, next) {
     filterUsers: (prev, test) => prev.filter(msg => test(""+msg.userID) || test(msg.userLower)),
     testUser: (msg, test) => test(""+msg.userID) || test(msg.userLower),
     testMsgText: (msg, test) => test(msg.textSearch) || test(msg.htmlLower),
-    isMsgMine: (msg) => me_se==msg.userID,
+    isMsgMine: (msg) => me_se.includes(msg.userID),
   };
   j.forEach(c => {
     c.id = c.msgID+"";
@@ -198,7 +209,7 @@ async function loadMx(path, name, roomRef, roomid, next) {
     userLink: (msg) => `https://matrix.to/#/${msg.sender}`,
     testUser: (msg, test) => test(msg.sender) || test(msg.userLower),
     testMsgText: (msg, test) => test(msg.textSearch) || test(msg.htmlLower),
-    isMsgMine: (msg) => me_mx==msg.sender,
+    isMsgMine: (msg) => me_mx.includes(msg.sender),
   };
   j.forEach(msg => {
     let ct = msg.content;
@@ -307,7 +318,7 @@ function parseSearch(str) {
   let ps = p_or();
   if (i < str.length) {
     i++;
-    ps = m_any(ps, p_or());
+    ps = m_any([ps, p_or()]);
   }
   return ps;
 }

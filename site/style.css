@@ -37,9 +37,10 @@ body.dark  .time { background-color: #6C7C86; color: #D3D3D3; }
 body.light .time { background-color: #CCCCCC; color: #333333; }
 
 
+body.light .arr { background-color: #CCC; }
+body.dark  .arr { background-color: #444; }
 .arr {
   font-family: BQN386;
-  background-color: #444;
   border-radius: 5px;
   padding: 2px 12px 2px 12px;
 }

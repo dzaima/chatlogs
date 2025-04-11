@@ -2,13 +2,33 @@
 
 Usage: download (as logs are >100MB total), and either manually use the files in `logs/`, or open `site/index.html` for basic searching.
 
-Search: `a&b|c&d` will find all messages either containing both `a` and `b`, or `c` and `d`. Alternatively, surrounding in `/`s (e.g. `/abc.efg/`) searches as a regex, or, prepending a space to the search string will match the following text exactly.
+## Search
 
-Clicking on the arrow left of a message will link you to it. For matrix messages, this will enter into a temporary view of the context (still in reverse-chronological order); middle-click or right-click→copy to get a matrix.to link.
+```js
+// everything is compared lowercase
+hello world // match messages containing both "hello" and "world" anywhere
+hello & world // alternative form of the above
+hello | world // match messages containing either side
+"2 3 ⍴ ⍳6" // exact match
+/hello,? world/ // search by regex
+(a & b) | (c & !("d" | /e/)) // as you'd expect
+```
 
-You may want to change the first two lines of `site/main.js` to your own StackExchange/Matrix IDs, so that your messages could be colored differently.
+Clicking on the arrow left of a message will open a temporary view of the room context (still in reverse-chronological order); middle-click or right-click→copy to get the original link.
 
-`<body class="dark">` in `site/index.html` can be changed to `<body class="light">` for a light theme.
+## Configuration
+
+Configuration is done by running commands in devtools (reload required for them to take effect):
+
+```js
+// theme selection:
+localStorage.setItem("chatlogs-theme", "light");
+
+// color your messages differently by storing your user ID:
+localStorage.setItem("me-se", "123456789");
+localStorage.setItem("me-mx", "@example:matrix.org");
+// (can enter multiple via joining with ";")
+```
 
 ## Updating logs
 
