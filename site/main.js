@@ -104,7 +104,7 @@ function unpackPaste(html) {
 
 function transcriptLink(room, msgID) {
   function stresc(x) {
-    return "'" + (x+"").replace('&','&amp;').replace(/["<>]/,''/*whatever*/) + "'";
+    return "'" + (x+"").replace('&','&amp;').replace(/["<>]/,''/* eh whatever */) + "'";
   }
   return `href="${room.msgLink(msgID)}" onclick="inlineTranscript(event, ${stresc(room.roomRef)}, ${stresc(msgID)})"`
 }
@@ -138,6 +138,13 @@ function prepareMessages(room, getDate) {
     msg.textSearch = (msg.text + unpackPaste(msg.html)).toLowerCase();
   });
 }
+async function finishRoom(room, next) {
+  let name = room.name;
+  await showStatus(name+": Sorting...");
+  room.data.sort((a,b)=>b.date-a.date);
+  await showStatus(name+": Loaded");
+  next(room);
+}
 
 async function loadSE(path, name, roomRef, roomid, next) {
   await showStatus(name+": Downloading history...");
@@ -153,7 +160,8 @@ async function loadSE(path, name, roomRef, roomid, next) {
   let room = {
     data: j,
     roomRef,
-    msgLink: (id) => `"https://chat.stackexchange.com/transcript/${roomid}?m=${id}#${id}`,
+    name,
+    msgLink: (id) => `https://chat.stackexchange.com/transcript/${roomid}?m=${id}#${id}`,
     userLink: (msg) => `https://chat.stackexchange.com/users/${msg.userID}`,
     filterUsers: (prev, test) => prev.filter(c => test(""+c.userID) || test(c.userLower)),
     testMsg: (msg, test) => test(msg.textSearch) || test(msg.htmlLower),
@@ -169,10 +177,7 @@ async function loadSE(path, name, roomRef, roomid, next) {
       c.textSearch = `:${c.replyID} ${c.textSearch}`;
     }
   });
-  await showStatus(name+": Sorting...");
-  j.sort((a,b)=>b.date-a.date);
-  await showStatus(name+": Loaded");
-  next(room);
+  await finishRoom(room, next);
 }
 
 async function loadMx(path, name, roomRef, roomid, next) {
@@ -203,6 +208,7 @@ async function loadMx(path, name, roomRef, roomid, next) {
   let room = {
     data: j,
     roomRef,
+    name,
     msgLink: (id) => `https://matrix.to/#/${roomid}/${id}`,
     userLink: (msg) => `https://matrix.to/#/${msg.sender}`,
     filterUsers: (prev, test) => prev.filter(c => test(c.sender) || test(c.userLower)),
@@ -224,10 +230,7 @@ async function loadMx(path, name, roomRef, roomid, next) {
   });
   prepareMessages(room, (c) => new Date(c.origin_server_ts));
   
-  await showStatus(name+": Sorting...");
-  j.sort((a,b)=>b.date-a.date);
-  await showStatus(name+": Loaded");
-  next(room);
+  await finishRoom(room, next);
 }
 
 function inlineTranscript(e, roomChr, id) {
