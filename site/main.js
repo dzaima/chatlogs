@@ -53,22 +53,22 @@ function updateRooms() {
   if (checked.some(c=>c.state==1)) return;
   
   currRooms = [];
-  let todo = checked.every(c=>c.state==2)? filterRender : updateRooms;
+  let next = checked.every(c=>c.state==2)? filterRender : updateRooms;
   for (let room of checked) {
     if (room.state==0) {
       room.state = 1;
-      let prevtodo = todo;
-      todo = () => room.fn(r => {
+      let prev = next;
+      next = () => room.fn(r => {
         room.loaded = r;
         room.state = 2;
-        prevtodo();
+        prev();
       });
     }
     if (room.state==2) {
       currRooms.push(room.loaded);
     }
   }
-  todo();
+  next();
 }
 
 function showStatus0(str) {
@@ -110,7 +110,7 @@ function transcriptLink(room, msgID) {
   function stresc(x) {
     return "'" + (x+"").replace('&','&amp;').replace(/["<>]/,''/* eh whatever */) + "'";
   }
-  return `href="${room.msgLink(msgID)}" onclick="inlineTranscript(event, ${stresc(room.roomRef)}, ${stresc(msgID)})"`
+  return `href="${room.msgLink(msgID)}" onclick="toInlineTranscript(event, ${stresc(room.roomRef)}, ${stresc(msgID)})"`
 }
 
 // https://github.com/Templarian/MaterialDesign/blob/master/LICENSE https://www.apache.org/licenses/LICENSE-2.0
@@ -217,7 +217,7 @@ async function loadMx(path, name, roomRef, roomid, next) {
   await finishRoom(room, next, (c) => new Date(c.origin_server_ts));
 }
 
-function inlineTranscript(e, roomChr, id) {
+function toInlineTranscript(e, roomChr, id) {
   e.preventDefault();
   let room = allRooms.find(c => c.chr==roomChr).loaded;
   
@@ -362,7 +362,7 @@ function messageHTML(msg, isMine) {
 <div class="mcont fr${isMine?" me":""}">
 <div class="fc"><a class="opt" ${transcriptLink(msg.room, msg.id)}>▼</a></div>
 <div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
- <div class="time" title="${msg.date}">${df(msg.date)}</div>
+ <div class="time" title="${msg.date}">${dateFormat(msg.date)}</div>
  <div class="src">${msg.html.replace(/(?<![>"])https:\/\/dzaima\.github\.io\/paste\/?#[a-zA-Z0-9#/@%]+\b/g, (c) => `<a href="${c}">https://dzaima.github.io/paste/…</a>`)}</div>
 </div></div>
 </div>
@@ -391,11 +391,11 @@ function pageDelta(d) {
 }
 
 let dateNow = new Date();
-function df(d) {
+function dateFormat(d) {
   let [wd, mo, dy, yr, tm] = (d+"").split(' ');
-  tm = tm.substring(0,tm.length-3);
+  tm = tm.substring(0, tm.length-3);
   if (d.getFullYear() == dateNow.getFullYear()) return `${mo} ${dy} ${tm}`;
-  else return `${mo} ${dy} '${yr.substr(2)} ${tm}`
+  else return `${mo} ${dy} '${yr.substring(2)} ${tm}`
 }
 
 
@@ -416,50 +416,38 @@ function escapeHTML(str) {
 }
 
 function saveLink(copyLink = false) {
-  let b64 = "#s"+allRooms.filter(c=>c.obj.checked).map(c=>c.chr).join``+"#"+enc(txt.value)+"#"+enc(usr.value);
-  history.pushState({}, "", b64);
-  if (copyLink) copy(location.href.replace("/#", "#"));
+  let b64 = `#s${allRooms.filter(c => c.obj.checked).map(c => c.chr).join('')}#${compressToURI(txt.value)}#${compressToURI(usr.value)}`;
+  history.pushState({}, '', b64);
+  if (copyLink) copy(location.href.replace('/#', '#'));
 }
 function loadLink() {
   let hash = decodeURIComponent(location.hash.slice(1));
   let t = hash[0];
   if (t=='s') {
-    let [rs, te, ue] = hash.slice(1).split("#");
+    let [rs, te, ue] = hash.slice(1).split('#');
     allRooms.forEach(c => c.obj.checked = rs.includes(c.chr))
-    txt.value = dec(te);
-    usr.value = dec(ue);
+    txt.value = decompressURI(te);
+    usr.value = decompressURI(ue);
     updateRooms();
   }
 }
 window.onload=setup;
 window.onhashchange=loadLink;
 
-function enc(str) {
+function compressToURI(str) {
   if (!str) return str;
-  let bytes = new TextEncoder("utf-8").encode(str);
-  return arrToB64(deflate(bytes));
+  let bytes = new TextEncoder('utf-8').encode(str);
+  let arr = pako.deflateRaw(bytes, {'level': 9});
+  let bytestr = [...arr].map(c => String.fromCharCode(c)).join('');
+  return btoa(bytestr).replace(/\+/g, '@').replace(/=+/, '');
 }
-function dec(str) {
+
+function decompressURI(str) {
   if (!str) return str;
   try {
-    return new TextDecoder("utf-8").decode(inflate(b64ToArr(str)));
+    let arr = new Uint8Array([...atob(decodeURIComponent(str).replace(/@/g, '+'))].map(c=>c.charCodeAt()));
+    return new TextDecoder('utf-8').decode(pako.inflateRaw(arr));
   } catch (e) {
-    return "failed to decode - full link not copied?";
+    return 'failed to decode - full link not copied?';
   }
-}
-
-function arrToB64(arr) {
-  var bytestr = "";
-  arr.forEach(c => bytestr+= String.fromCharCode(c));
-  return btoa(bytestr).replace(/\+/g, "@").replace(/=+/, "");
-}
-function b64ToArr(str) {
-  return new Uint8Array([...atob(decodeURIComponent(str).replace(/@/g, "+"))].map(c=>c.charCodeAt()))
-}
-
-function deflate(arr) {
-  return pako.deflateRaw(arr, {"level": 9});
-}
-function inflate(arr) {
-  return pako.inflateRaw(arr);
 }
