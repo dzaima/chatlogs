@@ -71,9 +71,12 @@ function updateRooms() {
   todo();
 }
 
+function showStatus0(str) {
+  statusMsg.innerText = str;
+}
 async function showStatus(str) {
   console.log(str);
-  statusMsg.innerText = str;
+  showStatus0(str);
   await new Promise(r=>setTimeout(r, 0));
 }
 
@@ -311,32 +314,41 @@ function parseSearch(str) {
 
 
 function filterRender(filter = true) {
+  let ok = true;
+  
   matched = currRooms.flatMap(room => {
     let leftMsgs = room.data;
     
     if (filter) {
-      if (usr.value) {
-        let search = parseSearch(usr.value);
-        leftMsgs = leftMsgs.filter(msg => room.testUser(msg, search));
-      }
-      if (txt.value) {
-        let search = parseSearch(txt.value);
-        leftMsgs = leftMsgs.filter(msg => room.testMsgText(msg, search));
+      try {
+        if (usr.value) {
+          let search = parseSearch(usr.value);
+          leftMsgs = leftMsgs.filter(msg => room.testUser(msg, search));
+        }
+        if (txt.value) {
+          let search = parseSearch(txt.value);
+          leftMsgs = leftMsgs.filter(msg => room.testMsgText(msg, search));
+        }
+      } catch (e) {
+        console.error(e);
+        showStatus0("Failed to filter: "+e+"");
+        leftMsgs = [];
+        ok = false;
       }
     }
     
     return leftMsgs;
   });
-  resetRender();
+  resetRender(ok);
 }
 function preResetRender() {
   if (currRooms.length > 1) matched.sort((a,b)=>b.date-a.date);
   pam = ((matched.length-1)/psz|0)+1;
   page = 0;
 }
-function resetRender() {
+function resetRender(clearStatus) {
   preResetRender();
-  render();
+  render(clearStatus);
 }
 
 var page = 0;
@@ -356,22 +368,22 @@ function messageHTML(msg, isMine) {
 </div>
 </div>`;
 }
-function render() {
+function render(clearStatus = true) {
   let arrows = `<div style="padding:8px 0px 5px 0px">
-  <a class="arr" href="#" onclick="p(-9e9);return false;">«</a>
-  <a class="arr" href="#" onclick="p(  -1);return false;">&lt;</a>
-  <a class="arr" href="#" onclick="p(   1);return false;">&gt;</a>
-  <a class="arr" href="#" onclick="p( 9e9);return false;">»</a></div>`;
+  <a class="arr" href="#" onclick="pageDelta(-9e9);return false;">«</a>
+  <a class="arr" href="#" onclick="pageDelta(  -1);return false;">&lt;</a>
+  <a class="arr" href="#" onclick="pageDelta(   1);return false;">&gt;</a>
+  <a class="arr" href="#" onclick="pageDelta( 9e9);return false;">»</a></div>`;
   let res = `${arrows}Page ${page+1} of ${pam}; ${matched.length} found <span style="width:30px" id="msgList"></div>`;
   for (let i = page*psz; i < Math.min((page+1)*psz, matched.length); i++) {
     let msg = matched[i];
     res+= messageHTML(msg, msg.room.isMsgMine(msg));
   }
   msgs.innerHTML = res+"<br>"+arrows;
-  statusMsg.innerText = "";
+  if (clearStatus) showStatus0("");
 }
 
-function p(d) {
+function pageDelta(d) {
   page+= d;
   if (page>=pam) page = pam-1;
   if (page < 0) page = 0;
