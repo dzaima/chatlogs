@@ -369,7 +369,7 @@ function messageHTML(msg, isMine) {
 </div>`;
 }
 function render(clearStatus = true) {
-  let arrows = `<div style="padding:8px 0px 5px 0px">
+  let arrows = `<div style="padding:2px 0px 5px 0px">
   <a class="arr" href="#" onclick="pageDelta(-9e9);return false;">«</a>
   <a class="arr" href="#" onclick="pageDelta(  -1);return false;">&lt;</a>
   <a class="arr" href="#" onclick="pageDelta(   1);return false;">&gt;</a>
