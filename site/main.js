@@ -11,29 +11,30 @@ function loadMe(name) {
 var me_se = loadMe("se").map(c => +c);
 var me_mx = loadMe("mx");
 
-function mkRoom(name, roomRef, logFile, shortName, roomID, loader) {
+function mkRoom(name, roomRef, logFile, roomID, loader) {
   return {
     state: 0,
     chr: roomRef,
     name,
-    fn: next => loader(logFile, shortName, roomRef, roomID, next),
+    fn: next => loader(logFile, name, roomRef, roomID, next),
   }
 }
 
 var allRooms = [
-  mkRoom("Orchard",    'o', "../logs/SE_orchard",      "SE/Orchard",  52405, loadSE),
-  mkRoom("ktree",      'k', "../logs/SE_thektree",     "SE/ktree",    52405, loadSE),
+  mkRoom("SE/Orchard", 'o', "../logs/SE_orchard",      52405, loadSE),
+  mkRoom("SE/ktree",   'k', "../logs/SE_thektree",     52405, loadSE),
   
-  mkRoom("BQN",        'B', "../logs/matrix_BQN",      "mx/BQN",      "!EjsgbQQNuTfHXQoiax:matrix.org", loadMx),
-  mkRoom("APL",        'A', "../logs/matrix_APL",      "mx/APL",      "!TobkTZMOkZJCvcSvwq:matrix.org", loadMx),
-  mkRoom("k",          'K', "../logs/matrix_k",        "mx/k",        "!laJBzNwLcAOMAbAEeQ:matrix.org", loadMx),
-  mkRoom("main",       'M', "../logs/matrix_main",     "mx/main",     "!cxPCiPlsXnajakSrqd:matrix.org", loadMx),
-  mkRoom("offtopic",   'O', "../logs/matrix_offtopic", "mx/offtopic", "!qfXqAqUHneTxiUgfrZ:matrix.org", loadMx),
-  mkRoom("J",          'J', "../logs/matrix_j",        "mx/J",        "!wypKDDiZJdzZRWebIG:matrix.org", loadMx),
-  mkRoom("Nial",       'N', "../logs/matrix_nial",     "mx/Nial",     "!YbHrHUqZIKqlLlqkVS:matrix.org", loadMx),
-  mkRoom("content",    'C', "../logs/matrix_content",  "mx/content",  "!gtyUrNfDifinXDOAsD:matrix.org", loadMx),
-  mkRoom("langdev",    'D', "../logs/matrix_langdev",  "mx/langdev",  "!WpdazzauuDxyGNAiCr:matrix.org", loadMx),
-  mkRoom("Kap",        'P', "../logs/matrix_kap",      "mx/Kap",      "!OFniHvZeRnzLtnCiWw:dhsdevelopments.com", loadMx),
+  mkRoom("main",       'M', "../logs/matrix_main",      "!cxPCiPlsXnajakSrqd:matrix.org", loadMx),
+  mkRoom("BQN",        'B', "../logs/matrix_BQN",       "!EjsgbQQNuTfHXQoiax:matrix.org", loadMx),
+  mkRoom("APL",        'A', "../logs/matrix_APL",       "!TobkTZMOkZJCvcSvwq:matrix.org", loadMx),
+  mkRoom("k",          'K', "../logs/matrix_k",         "!laJBzNwLcAOMAbAEeQ:matrix.org", loadMx),
+  mkRoom("offtopic",   'O', "../logs/matrix_offtopic",  "!qfXqAqUHneTxiUgfrZ:matrix.org", loadMx),
+  mkRoom("J",          'J', "../logs/matrix_j",         "!wypKDDiZJdzZRWebIG:matrix.org", loadMx),
+  mkRoom("Nial",       'N', "../logs/matrix_nial",      "!YbHrHUqZIKqlLlqkVS:matrix.org", loadMx),
+  mkRoom("content",    'C', "../logs/matrix_content",   "!gtyUrNfDifinXDOAsD:matrix.org", loadMx),
+  mkRoom("langdev",    'D', "../logs/matrix_langdev",   "!WpdazzauuDxyGNAiCr:matrix.org", loadMx),
+  mkRoom("Kap",        'P', "../logs/matrix_kap",       "!OFniHvZeRnzLtnCiWw:dhsdevelopments.com", loadMx),
+  
 ];
 
 async function setup() {
@@ -45,7 +46,7 @@ async function setup() {
   let html = "";
   for (let i = 0; i < allRooms.length; i++) {
     let {name} = allRooms[i];
-    // if (i === allRooms.length>>1) html+= '<br>';
+    if (i == 2) html+= '<br>matrix:';
     html+= `<label><input type="checkbox" onchange="checkboxUpd()" id="chk-${name}"></input>${name}</label> `;
   }
   roomselect.innerHTML = html;
