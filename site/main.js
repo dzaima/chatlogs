@@ -10,6 +10,7 @@ function loadMe(name) {
 }
 var me_se = loadMe("se").map(c => +c);
 var me_mx = loadMe("mx");
+var me_ta = loadMe("ta");
 
 function mkRoom(name, roomRef, logFile, roomID, loader) {
   return {
@@ -24,6 +25,9 @@ var allRooms = [
   mkRoom("SE/Orchard", 'o', "../logs/SE_orchard",      52405, loadSE),
   mkRoom("SE/ktree",   'k', "../logs/SE_thektree",     52405, loadSE),
   
+  mkRoom("TA/bqnffi", 'Tf', "../logs/ta_bqnffi.json",  "https://topanswers.xyz/apl?q=2002", loadTA),
+  mkRoom("TA/Singeli",'Ts', "../logs/ta_singeli.json", "https://topanswers.xyz/apl?q=1623", loadTA),
+  
   mkRoom("main",       'M', "../logs/matrix_main",      "!cxPCiPlsXnajakSrqd:matrix.org", loadMx),
   mkRoom("BQN",        'B', "../logs/matrix_BQN",       "!EjsgbQQNuTfHXQoiax:matrix.org", loadMx),
   mkRoom("APL",        'A', "../logs/matrix_APL",       "!TobkTZMOkZJCvcSvwq:matrix.org", loadMx),
@@ -34,7 +38,6 @@ var allRooms = [
   mkRoom("content",    'C', "../logs/matrix_content",   "!gtyUrNfDifinXDOAsD:matrix.org", loadMx),
   mkRoom("langdev",    'D', "../logs/matrix_langdev",   "!WpdazzauuDxyGNAiCr:matrix.org", loadMx),
   mkRoom("Kap",        'P', "../logs/matrix_kap",       "!OFniHvZeRnzLtnCiWw:dhsdevelopments.com", loadMx),
-  
 ];
 
 async function setup() {
@@ -46,7 +49,8 @@ async function setup() {
   let html = "";
   for (let i = 0; i < allRooms.length; i++) {
     let {name} = allRooms[i];
-    if (i == 2) html+= '<br>matrix:';
+    if (i == 2) html+= '&nbsp;&nbsp;';
+    if (i == 4) html+= '<br>matrix:';
     html+= `<label><input type="checkbox" onchange="checkboxUpd()" id="chk-${name}"></input>${name}</label> `;
   }
   roomselect.innerHTML = html;
@@ -229,6 +233,34 @@ async function loadMx(path, name, roomRef, roomid, next) {
   });
   
   await finishRoom(room, next, (c) => new Date(c.origin_server_ts));
+}
+
+async function loadTA(path, name, roomRef, link, next) {
+  await showStatus(name+": Downloading message log...");
+  let j = await loadFile(path);
+  
+  await showStatus(name+": Parsing JSON...");
+  j = JSON.parse(j);
+  
+  await showStatus(name+": Preparing data...");
+  
+  let room = {
+    data: j,
+    roomRef,
+    name,
+    msgLink: (id) => undefined,
+    userLink: (msg) => undefined,
+    testUser: (msg, test) => test(""+msg.userID) || test(msg.userLower),
+    testMsgText: (msg, test) => test(msg.textSearch) || test(msg.htmlLower),
+    isMsgMine: (msg) => me_ta.includes(""+msg.userID),
+  };
+  j.forEach(msg => {
+    if (msg.replyID !== undefined) {
+      msg.html = replyPrefix(room, msg) + msg.html;
+    }
+  });
+  
+  await finishRoom(room, next, c => new Date(c.date));
 }
 
 function toInlineTranscript(e, roomChr, id) {
