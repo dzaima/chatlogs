@@ -1,4 +1,4 @@
-var me_se = -1; // the number of your user page - https://chat.stackexchange.com/users/123456
+var me_se = 123456789; // the number of your user page - https://chat.stackexchange.com/users/123456789
 var me_mx = "@example:matrix.org"; // your matrix ID
 console.log("Variable 'matched' contains the filtered message objects");
 
@@ -112,26 +112,10 @@ function transcriptLink(room, msgID) {
 // https://github.com/Templarian/MaterialDesign/blob/master/LICENSE https://www.apache.org/licenses/LICENSE-2.0
 var arrow = '<svg width="12" height="12" viewBox="0 0 24 24"><path d="M11 17v-5h5v8h5V7H11V2l-7 7.5z" fill="#aaaaaa"></path></svg>'
 
-function messageHTML(msg, isMine) {
-  return `
-<div class="msg">
-<div class="user"><a href="${msg.room.userLink(msg)}">${msg.username}</a></div>
-<div class="mcont fr${isMine?" me":""}">
-<div class="fc"><a class="opt" ${transcriptLink(msg.room, msg.id)}>▼</a></div>
-<div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
- <div class="time" title="${msg.date}">${df(msg.date)}</div>
- <div class="src">${
-  !msg.html? '<span class="removed">(removed)</span>'
-  : msg.html.replace(/(?<![>"])https:\/\/dzaima\.github\.io\/paste\/?#[a-zA-Z0-9#/@%]+\b/g, (c) => `<a href="${c}">https://dzaima.github.io/paste/…</a>`)
- }</div>
-</div></div>
-</div>
-</div>`;
-}
-
 function prepareMessages(room, getDate) {
   room.data.forEach(msg => {
     msg.room = room;
+    if (!msg.html) msg.html = '<span class="removed">(removed)</span>';
     msg.date = getDate(msg);
     msg.userLower = msg.username.toLowerCase();
     msg.htmlLower = msg.html.toLowerCase();
@@ -163,9 +147,10 @@ async function loadSE(path, name, roomRef, roomid, next) {
     name,
     msgLink: (id) => `https://chat.stackexchange.com/transcript/${roomid}?m=${id}#${id}`,
     userLink: (msg) => `https://chat.stackexchange.com/users/${msg.userID}`,
-    filterUsers: (prev, test) => prev.filter(c => test(""+c.userID) || test(c.userLower)),
-    testMsg: (msg, test) => test(msg.textSearch) || test(msg.htmlLower),
-    html: (msg) => messageHTML(msg, me_se==msg.userID),
+    filterUsers: (prev, test) => prev.filter(msg => test(""+msg.userID) || test(msg.userLower)),
+    testUser: (msg, test) => test(""+msg.userID) || test(msg.userLower),
+    testMsgText: (msg, test) => test(msg.textSearch) || test(msg.htmlLower),
+    isMsgMine: (msg) => me_se==msg.userID,
   };
   prepareMessages(room, c => new Date(c.time*1000));
   
@@ -173,7 +158,6 @@ async function loadSE(path, name, roomRef, roomid, next) {
     c.id = c.msgID+"";
     if (c.replyID!=-1) {
       c.html = `<a ${transcriptLink(room, c.replyID)} class="reply">${arrow}</a>${c.html}`
-      c.htmlLower = `:${c.replyID} ${c.htmlLower}`;
       c.textSearch = `:${c.replyID} ${c.textSearch}`;
     }
   });
@@ -211,9 +195,9 @@ async function loadMx(path, name, roomRef, roomid, next) {
     name,
     msgLink: (id) => `https://matrix.to/#/${roomid}/${id}`,
     userLink: (msg) => `https://matrix.to/#/${msg.sender}`,
-    filterUsers: (prev, test) => prev.filter(c => test(c.sender) || test(c.userLower)),
-    testMsg: (msg, test) => test(msg.textSearch) || test(msg.htmlLower),
-    html: (msg) => messageHTML(msg, me_mx==msg.sender),
+    testUser: (msg, test) => test(msg.sender) || test(msg.userLower),
+    testMsgText: (msg, test) => test(msg.textSearch) || test(msg.htmlLower),
+    isMsgMine: (msg) => me_mx==msg.sender,
   };
   j.forEach(m => {
     let ct = m.content;
@@ -328,11 +312,12 @@ function filterRender(filter = true) {
     
     if (filter) {
       if (usr.value) {
-        leftMsgs = room.filterUsers(leftMsgs, parseSearch(usr.value));
+        let search = parseSearch(usr.value);
+        leftMsgs = leftMsgs.filter(msg => room.testUser(msg, search));
       }
       if (txt.value) {
         let search = parseSearch(txt.value);
-        leftMsgs = leftMsgs.filter((c) => room.testMsg(c, search));
+        leftMsgs = leftMsgs.filter(msg => room.testMsgText(msg, search));
       }
     }
     
@@ -353,6 +338,20 @@ function resetRender() {
 var page = 0;
 var psz = 100;
 var pam = 0;
+
+function messageHTML(msg, isMine) {
+  return `
+<div class="msg">
+<div class="user"><a href="${msg.room.userLink(msg)}">${msg.username}</a></div>
+<div class="mcont fr${isMine?" me":""}">
+<div class="fc"><a class="opt" ${transcriptLink(msg.room, msg.id)}>▼</a></div>
+<div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
+ <div class="time" title="${msg.date}">${df(msg.date)}</div>
+ <div class="src">${msg.html.replace(/(?<![>"])https:\/\/dzaima\.github\.io\/paste\/?#[a-zA-Z0-9#/@%]+\b/g, (c) => `<a href="${c}">https://dzaima.github.io/paste/…</a>`)}</div>
+</div></div>
+</div>
+</div>`;
+}
 function render() {
   let arrows = `<div style="padding:8px 0px 5px 0px">
   <a class="arr" href="#" onclick="p(-9e9);return false;">«</a>
@@ -361,8 +360,8 @@ function render() {
   <a class="arr" href="#" onclick="p( 9e9);return false;">»</a></div>`;
   let res = `${arrows}Page ${page+1} of ${pam}; ${matched.length} found <span style="width:30px" id="msgList"></div>`;
   for (let i = page*psz; i < Math.min((page+1)*psz, matched.length); i++) {
-    let m = matched[i];
-    res+= m.room.html(m);
+    let msg = matched[i];
+    res+= messageHTML(msg, msg.room.isMsgMine(msg));
   }
   msgs.innerHTML = res+"<br>"+arrows;
   statusMsg.innerText = "";
