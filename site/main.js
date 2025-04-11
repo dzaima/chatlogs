@@ -26,7 +26,7 @@ async function load() {
   roomselect.innerHTML = html;
   for (let r of allRooms) r.obj = document.getElementById("chk-"+r.name);
   loadLnk();
-  upd();
+  filterRender();
   txt.focus();
 }
 
@@ -39,7 +39,7 @@ function updateRooms() {
   if (checked.some(c=>c.state==1)) return;
   
   currRooms = [];
-  let todo = checked.every(c=>c.state==2)? upd : updateRooms;
+  let todo = checked.every(c=>c.state==2)? filterRender : updateRooms;
   for (let room of checked) {
     if (room.state==0) {
       room.state = 1;
@@ -92,10 +92,17 @@ function unpackPaste(html) {
   return '\n'+matches.join('\n');
 }
 
+function transcriptLink(room, msgID) {
+  function stresc(x) {
+    return "'" + (x+"").replace('&','&amp;').replace(/["<>]/,''/*whatever*/) + "'";
+  }
+  return `href="${room.msgLink(msgID)}" onclick="inlineTranscript(event, ${stresc(room.roomRef)}, ${stresc(msgID)})"`
+}
+
 // https://github.com/Templarian/MaterialDesign/blob/master/LICENSE https://www.apache.org/licenses/LICENSE-2.0
 var arrow = '<svg width="12" height="12" viewBox="0 0 24 24"><path d="M11 17v-5h5v8h5V7H11V2l-7 7.5z" fill="#aaaaaa"></path></svg>'
 
-async function loadSE(path, name, roomid, next) {
+async function loadSE(path, name, roomRef, roomid, next) {
   await showStatus(name+": Downloading history...");
   
   let j = (await loadFile(path)).split('\n');
@@ -105,41 +112,22 @@ async function loadSE(path, name, roomid, next) {
   j = j.map(c=>JSON.parse(c));
   
   await showStatus(name+": Preparing data...");
-  j.forEach(c => {
-    c.userLower = c.username.toLowerCase();
-    c.htmlLower = c.html.toLowerCase();
-    c.textSearch = (c.text + unpackPaste(c.html)).toLowerCase();
-    if (c.replyID!=-1) {
-      c.html = `<a href="https://chat.stackexchange.com/transcript/${roomid}?m=${c.replyID}#${c.replyID}" class="reply">${arrow}</a>${c.html}`
-      c.htmlLower = `:${c.replyID} ${c.htmlLower}`;
-      c.textSearch = `:${c.replyID} ${c.textSearch}`;
-    }
-    c.date = new Date(c.time*1000);
-  });
-  await showStatus(name+": Sorting...");
-  j.sort((a,b)=>b.date-a.date);
+  
   let room = {
     data: j,
-    filterUsers: (prev, val) => {
-      if (/^[0-9-]+$/.test(val)) {
-        let test = +val;
-        return prev.filter(c=>c.userID == test);
-      } else {
-        let test = val.toLowerCase();
-        return prev.filter(c=>c.userLower.includes(test));
-      }
+    roomRef,
+    msgLink: (id) => `"https://chat.stackexchange.com/transcript/${roomid}?m=${id}#${id}`,
+    filterUsers: (prev, test) => {
+      return prev.filter(c => test(""+c.userID) || test(c.userLower));
     },
-    msgHas: (msg, txt) => {
-      return msg.textSearch.includes(txt) || msg.htmlLower.includes(txt);
-    },
-    msgTest: (msg, regex) => {
-      return regex.test(msg.textSearch) || regex.test(msg.htmlLower);
+    testMsg: (msg, test) => {
+      return test(msg.textSearch) || test(msg.htmlLower);
     },
     html: (m) => `
 <div class="msg">
 <div class="user"><a href="https://chat.stackexchange.com/users/${m.userID}">${m.username}</a></div>
 <div class="mcont fr${me_se==m.userID?" me":""}">
-<div class="fc"><a class="opt" href="https://chat.stackexchange.com/transcript/${roomid}?m=${m.msgID}#${m.msgID}">▼</a></div>
+<div class="fc"><a class="opt" ${transcriptLink(room, m.msgID)}>▼</a></div>
 <div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
  <div class="time" title="${m.date}">${df(m.date)}</div>
  <div class="src">${m.html==""? '<span class="removed">(removed)</span>' :
@@ -150,13 +138,27 @@ async function loadSE(path, name, roomid, next) {
 </div>
 </div>`,
   };
+  
+  j.forEach(c => {
+    c.id = c.msgID+"";
+    c.userLower = c.username.toLowerCase();
+    c.htmlLower = c.html.toLowerCase();
+    c.textSearch = (c.text + unpackPaste(c.html)).toLowerCase();
+    if (c.replyID!=-1) {
+      c.html = `<a ${transcriptLink(room, c.replyID)} class="reply">${arrow}</a>${c.html}`
+      c.htmlLower = `:${c.replyID} ${c.htmlLower}`;
+      c.textSearch = `:${c.replyID} ${c.textSearch}`;
+    }
+    c.date = new Date(c.time*1000);
+  });
+  await showStatus(name+": Sorting...");
+  j.sort((a,b)=>b.date-a.date);
   j.forEach(c => c.room = room);
   await showStatus(name+": Loaded");
   next(room);
 }
 
-
-async function loadMx(path, name, roomid, next) {
+async function loadMx(path, name, roomRef, roomid, next) {
   await showStatus(name+": Downloading history...");
   let j = (await loadFile(path)).split('\n');
   await showStatus(name+": Parsing JSON...")
@@ -169,7 +171,6 @@ async function loadMx(path, name, roomid, next) {
   
   let newJ = [];
   let msgMap = {};
-  asdasd = j
   j.forEach(c => {
     msgMap[c.event_id] = c;
     if (c.type!="m.room.message" || !c.content.body) return;
@@ -182,8 +183,32 @@ async function loadMx(path, name, roomid, next) {
   });
   j = newJ;
   
+  let room = {
+    data: j,
+    roomRef,
+    msgLink: (id) => `https://matrix.to/#/${roomid}/${id}`,
+    filterUsers: (prev, test) => {
+      return prev.filter(c => test(c.sender) || test(c.userLower));
+    },
+    testMsg: (msg, test) => {
+      return test(msg.textSearch) || test(msg.htmlLower);
+    },
+    html: (m) => `
+<div class="msg">
+<div class="user"><a href="https://matrix.to/#/${m.sender}">${m.username}</a></div>
+<div class="mcont fr${me_mx==m.sender?" me":""}">
+<div class="fc"><a class="opt" ${transcriptLink(room, m.id)} href="https://matrix.to/#/${roomid}/${m.event_id}">▼</a></div>
+<div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
+ <div class="time" title="${m.date}">${df(m.date)}</div>
+ <div class="src">${m.html}</div>
+</div></div>
+</div>
+</div>`,
+  };
+  
   j.forEach(m => {
     let ct = m.content;
+    m.id = m.event_id;
     m.text = ct.body;
     m.html = ct.format=="org.matrix.custom.html"? ct.formatted_body : escapeHTML(m.text);
     m.username = nameMap[m.sender];
@@ -194,48 +219,27 @@ async function loadMx(path, name, roomid, next) {
     if (ct["m.relates_to"] && ct["m.relates_to"]["m.in_reply_to"]) {
       m.replyID = ct["m.relates_to"]["m.in_reply_to"].event_id;
       let endIdx = m.html.indexOf("</mx-reply>");
-      m.html = `<a href="https://matrix.to/#/${roomid}/${m.replyID}" onclick="mxClick(event, this)" class="reply">${arrow}</a>${endIdx==-1? m.html : m.html.substring(endIdx+11)}`;
+      m.html = `<a ${transcriptLink(room, m.replyID)} class="reply">${arrow}</a>${endIdx==-1? m.html : m.html.substring(endIdx+11)}`;
     }
     m.date = new Date(m.origin_server_ts);
   });
   await showStatus(name+": Sorting...");
   j.sort((a,b)=>b.date-a.date);
-  let room = {
-    data: j,
-    filterUsers: (prev, val) => {
-      let test = val.toLowerCase();
-      return test[0]=='@'? prev.filter(c=>c.sender.includes(test)) : prev.filter(c=>c.userLower.includes(test));
-    },
-    msgHas: (msg, txt) => {
-      return msg.textSearch.includes(txt) || msg.htmlLower.includes(txt);
-    },
-    msgTest: (msg, regex) => {
-      return regex.test(msg.textSearch) || regex.test(msg.htmlLower);
-    },
-    html: (m) => `
-<div class="msg">
-<div class="user"><a href="https://matrix.to/#/${m.sender}">${m.username}</a></div>
-<div class="mcont fr${me_mx==m.sender?" me":""}">
-<div class="fc"><a class="opt" onclick="mxClick(event, this)" href="https://matrix.to/#/${roomid}/${m.event_id}">▼</a></div>
-<div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
- <div class="time" title="${m.date}">${df(m.date)}</div>
- <div class="src">${m.html}</div>
-</div></div>
-</div>
-</div>`,
-  };
   j.forEach(c => c.room = room);
   await showStatus(name+": Loaded");
   next(room);
 }
 
-function mxClick(e, t) {
+function inlineTranscript(e, roomChr, id) {
   e.preventDefault();
-  let id = t.href.split("/").slice(-1)[0];
-  upd(false);
-  let pos = matched.findIndex(c=>c.event_id==id);
+  let room = allRooms.find(c => c.chr==roomChr).loaded;
+  
+  matched = room.data;
+  let pos = matched.findIndex(c=>c.id==id);
+  preResetRender();
   page = pos/psz | 0;
   render();
+  
   let msg = msgList.children[pos%psz];
   msg.focus();
   msg.scrollIntoView();
@@ -244,44 +248,102 @@ function mxClick(e, t) {
   setTimeout(() => msgCont.classList.remove("highlighted"), 600);
 }
 
+
+function parseSearch(str) {
+  function m_always() { return () => true; }
+  function m_loose(txt) { return m_exact(txt); }
+  function m_exact(txt) { txt = txt.toLowerCase(); return (s) => s.includes(txt); }
+  function m_regex(txt) { let r = new RegExp(txt, 'i'); return (s) => r.test(s); }
+  function m_not(m) { return (s) => !m(s); }
+  function m_all(ms) { return (s) => ms.every(c => c(s)); }
+  function m_any(ms) { return (s) =>  ms.some(c => c(s)); }
+  
+  let i = 0;
+  function parseEscaped(end) {
+    let i0 = i+1;
+    i = str.indexOf(end, i0);
+    if (i == -1) i = str.length;
+    let body = str.substring(i0, i);
+    i = Math.min(str.length, i+1);
+    return body;
+  }
+  function skip() {
+    while (str[i] === ' ') i++;
+  }
+  function part() {
+    skip();
+    if (i >= str.length) return m_always();
+    switch (str[i]) {
+      case '"': return m_exact(parseEscaped('"'));
+      case '/': return m_regex(parseEscaped('/'));
+      case '!': i++; return m_not(part());
+      case '(':
+        i++;
+        let r = p_or();
+        i++; // ')'
+        return r;
+      default:
+        let i0 = i;
+        while (i<str.length && !/[ "!|&()]/.test(str[i])) i++;
+        return m_loose(str.substring(i0, i));
+    }
+  }
+  function p_and() {
+    let ps = [];
+    while (i < str.length) {
+      skip();
+      if (/[)|]/.test(str[i])) break;
+      if (str[i]==='&') { i++; skip(); }
+      ps.push(part());
+    }
+    return ps.length==1? ps[0] : m_all(ps);
+  }
+  function p_or() { // main; ends on EOF or ')'
+    let ps = [];
+    while (i < str.length) {
+      skip();
+      if (str[i]===')') break;
+      if (str[i]==='|') { i++; skip(); }
+      ps.push(p_and());
+    }
+    return ps.length==1? ps[0] : m_any(ps);
+  }
+  
+  let ps = p_or();
+  if (i < str.length) {
+    i++;
+    ps = m_any(ps, p_or());
+  }
+  return ps;
+}
+
+
 var matched;
-function upd(filter = true) {
+function filterRender(filter = true) {
   matched = currRooms.flatMap(room => {
     let leftMsgs = room.data;
     
-    if (filter && usr.value) leftMsgs = room.filterUsers(leftMsgs, usr.value);
-    
-    if (filter && txt.value) { // a&b|c&d
-      let exp = txt.value.toLowerCase();
-      if (exp[0]==' ') {
-        exp = exp.substring(1);
-        leftMsgs = leftMsgs.filter(c => room.msgHas(c, exp));
-      } else if (exp[0]=='/' && exp[exp.length-1]=='/') {
-        let regex = new RegExp(exp.substring(1, exp.length-1));
-        leftMsgs = leftMsgs.filter(c => room.msgTest(c, regex));
-      } else {
-        let ands = [];
-        let ors = [];
-        let curr = "";
-        let i = 0;
-        while (i<exp.length) {
-          let c = exp[i++];
-          if (c=='\\') curr+= exp[i++];
-          else if (c=='&') { ands.push(curr); curr=""; }
-          else if (c=='|') { ands.push(curr); curr=""; ors.push(ands); ands = []; }
-          else curr+= c;
-        }
-        ands.push(curr); ors.push(ands);
-        ors = ors.filter(c=>c.length).map(c=>c.filter(k=>k.length));
-        leftMsgs = leftMsgs.filter(c=>ors.some(ands => ands.every(k => room.msgHas(c, k))));
+    if (filter) {
+      if (usr.value) {
+        leftMsgs = room.filterUsers(leftMsgs, parseSearch(usr.value));
+      }
+      if (txt.value) {
+        let search = parseSearch(txt.value);
+        leftMsgs = leftMsgs.filter((c) => room.testMsg(c, search));
       }
     }
     
     return leftMsgs;
-  })
+  });
+  resetRender();
+}
+function preResetRender() {
   if (currRooms.length > 1) matched.sort((a,b)=>b.date-a.date);
   pam = ((matched.length-1)/psz|0)+1;
   page = 0;
+}
+function resetRender() {
+  preResetRender();
   render();
 }
 
