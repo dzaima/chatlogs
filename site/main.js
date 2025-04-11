@@ -112,6 +112,33 @@ function transcriptLink(room, msgID) {
 // https://github.com/Templarian/MaterialDesign/blob/master/LICENSE https://www.apache.org/licenses/LICENSE-2.0
 var arrow = '<svg width="12" height="12" viewBox="0 0 24 24"><path d="M11 17v-5h5v8h5V7H11V2l-7 7.5z" fill="#aaaaaa"></path></svg>'
 
+function messageHTML(msg, isMine) {
+  return `
+<div class="msg">
+<div class="user"><a href="${msg.room.userLink(msg)}">${msg.username}</a></div>
+<div class="mcont fr${isMine?" me":""}">
+<div class="fc"><a class="opt" ${transcriptLink(msg.room, msg.id)}>▼</a></div>
+<div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
+ <div class="time" title="${msg.date}">${df(msg.date)}</div>
+ <div class="src">${
+  !msg.html? '<span class="removed">(removed)</span>'
+  : msg.html.replace(/(?<![>"])https:\/\/dzaima\.github\.io\/paste\/?#[a-zA-Z0-9#/@%]+\b/g, (c) => `<a href="${c}">https://dzaima.github.io/paste/…</a>`)
+ }</div>
+</div></div>
+</div>
+</div>`;
+}
+
+function prepareMessages(room, getDate) {
+  room.data.forEach(msg => {
+    msg.room = room;
+    msg.date = getDate(msg);
+    msg.userLower = msg.username.toLowerCase();
+    msg.htmlLower = msg.html.toLowerCase();
+    msg.textSearch = (msg.text + unpackPaste(msg.html)).toLowerCase();
+  });
+}
+
 async function loadSE(path, name, roomRef, roomid, next) {
   await showStatus(name+": Downloading history...");
   
@@ -127,43 +154,23 @@ async function loadSE(path, name, roomRef, roomid, next) {
     data: j,
     roomRef,
     msgLink: (id) => `"https://chat.stackexchange.com/transcript/${roomid}?m=${id}#${id}`,
-    filterUsers: (prev, test) => {
-      return prev.filter(c => test(""+c.userID) || test(c.userLower));
-    },
-    testMsg: (msg, test) => {
-      return test(msg.textSearch) || test(msg.htmlLower);
-    },
-    html: (m) => `
-<div class="msg">
-<div class="user"><a href="https://chat.stackexchange.com/users/${m.userID}">${m.username}</a></div>
-<div class="mcont fr${me_se==m.userID?" me":""}">
-<div class="fc"><a class="opt" ${transcriptLink(room, m.msgID)}>▼</a></div>
-<div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
- <div class="time" title="${m.date}">${df(m.date)}</div>
- <div class="src">${m.html==""? '<span class="removed">(removed)</span>' :
-  m.html
-  .replace(/(?<![>"])https:\/\/dzaima\.github\.io\/paste\/?#[a-zA-Z0-9#/@%]+\b/g, (c) => `<a href="${c}">https://dzaima.github.io/paste/…</a>`)
-}</div>
-</div></div>
-</div>
-</div>`,
+    userLink: (msg) => `https://chat.stackexchange.com/users/${msg.userID}`,
+    filterUsers: (prev, test) => prev.filter(c => test(""+c.userID) || test(c.userLower)),
+    testMsg: (msg, test) => test(msg.textSearch) || test(msg.htmlLower),
+    html: (msg) => messageHTML(msg, me_se==msg.userID),
   };
+  prepareMessages(room, c => new Date(c.time*1000));
   
   j.forEach(c => {
     c.id = c.msgID+"";
-    c.userLower = c.username.toLowerCase();
-    c.htmlLower = c.html.toLowerCase();
-    c.textSearch = (c.text + unpackPaste(c.html)).toLowerCase();
     if (c.replyID!=-1) {
       c.html = `<a ${transcriptLink(room, c.replyID)} class="reply">${arrow}</a>${c.html}`
       c.htmlLower = `:${c.replyID} ${c.htmlLower}`;
       c.textSearch = `:${c.replyID} ${c.textSearch}`;
     }
-    c.date = new Date(c.time*1000);
   });
   await showStatus(name+": Sorting...");
   j.sort((a,b)=>b.date-a.date);
-  j.forEach(c => c.room = room);
   await showStatus(name+": Loaded");
   next(room);
 }
@@ -197,45 +204,28 @@ async function loadMx(path, name, roomRef, roomid, next) {
     data: j,
     roomRef,
     msgLink: (id) => `https://matrix.to/#/${roomid}/${id}`,
-    filterUsers: (prev, test) => {
-      return prev.filter(c => test(c.sender) || test(c.userLower));
-    },
-    testMsg: (msg, test) => {
-      return test(msg.textSearch) || test(msg.htmlLower);
-    },
-    html: (m) => `
-<div class="msg">
-<div class="user"><a href="https://matrix.to/#/${m.sender}">${m.username}</a></div>
-<div class="mcont fr${me_mx==m.sender?" me":""}">
-<div class="fc"><a class="opt" ${transcriptLink(room, m.id)} href="https://matrix.to/#/${roomid}/${m.event_id}">▼</a></div>
-<div class="fc" style="width:100%;max-width:98%;min-width:98%"><div>
- <div class="time" title="${m.date}">${df(m.date)}</div>
- <div class="src">${m.html}</div>
-</div></div>
-</div>
-</div>`,
+    userLink: (msg) => `https://matrix.to/#/${msg.sender}`,
+    filterUsers: (prev, test) => prev.filter(c => test(c.sender) || test(c.userLower)),
+    testMsg: (msg, test) => test(msg.textSearch) || test(msg.htmlLower),
+    html: (msg) => messageHTML(msg, me_mx==msg.sender),
   };
-  
   j.forEach(m => {
     let ct = m.content;
     m.id = m.event_id;
     m.text = ct.body;
     m.html = ct.format=="org.matrix.custom.html"? ct.formatted_body : escapeHTML(m.text);
-    m.username = nameMap[m.sender];
-    if (!m.username) m.username = m.sender.split(':')[0].substring(1);
-    m.userLower = m.username.toLowerCase();
-    m.htmlLower = m.html.toLowerCase();
-    m.textSearch = (m.text + unpackPaste(m.html)).toLowerCase();
+    m.username = nameMap[m.sender] || m.sender.split(':')[0].substring(1);
+    
     if (ct["m.relates_to"] && ct["m.relates_to"]["m.in_reply_to"]) {
       m.replyID = ct["m.relates_to"]["m.in_reply_to"].event_id;
       let endIdx = m.html.indexOf("</mx-reply>");
       m.html = `<a ${transcriptLink(room, m.replyID)} class="reply">${arrow}</a>${endIdx==-1? m.html : m.html.substring(endIdx+11)}`;
     }
-    m.date = new Date(m.origin_server_ts);
   });
+  prepareMessages(room, (c) => new Date(c.origin_server_ts));
+  
   await showStatus(name+": Sorting...");
   j.sort((a,b)=>b.date-a.date);
-  j.forEach(c => c.room = room);
   await showStatus(name+": Loaded");
   next(room);
 }
