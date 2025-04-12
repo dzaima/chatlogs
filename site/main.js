@@ -4,8 +4,15 @@ console.log("Variable 'matched' contains the filtered message objects");
 var currRooms = [];
 var matched;
 
+let ls;
+try {
+  ls = window.localStorage;
+} catch (e) {
+  ls = {getItem: _=>undefined};
+}
+
 function loadMe(name) {
-  let r = localStorage.getItem("me-"+name);
+  let r = ls.getItem("me-"+name);
   return r? r.split(";") : [];
 }
 var me_se = loadMe("se").map(c => +c);
@@ -41,7 +48,7 @@ var allRooms = [
 ];
 
 async function setup() {
-  var theme = localStorage.getItem("chatlogs-theme");
+  var theme = ls.getItem("chatlogs-theme");
   if (theme) {
     document.body.classList.remove("dark");
     document.body.classList.add(theme);
