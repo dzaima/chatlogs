@@ -292,13 +292,23 @@ function parseSearch(str) {
   function m_any(ms) { return (s) =>  ms.some(c => c(s)); }
   
   let i = 0;
-  function parseEscaped(end) {
-    let i0 = i+1;
-    i = str.indexOf(end, i0);
-    if (i == -1) i = str.length;
-    let body = str.substring(i0, i);
-    i = Math.min(str.length, i+1);
-    return body;
+  function parseEscaped(surrounded, includeBackslash, isEnd) {
+    if (surrounded && i < str.length) i++;
+    let val = "";
+    while (i<str.length) {
+      if (str[i] == '\\') {
+        if (++i >= str.length) break;
+        if (includeBackslash) val+= '\\';
+        val+= str[i++];
+      } else if (!isEnd(str[i])) {
+        val+= str[i++];
+      } else {
+        break;
+      }
+    }
+    if (surrounded && i < str.length) i++;
+    console.log(val);
+    return val;
   }
   function skip() {
     while (str[i] === ' ') i++;
@@ -307,26 +317,15 @@ function parseSearch(str) {
     skip();
     if (i >= str.length) return m_always();
     switch (str[i]) {
-      case '"': return m_exact(parseEscaped('"'));
-      case '/': return m_regex(parseEscaped('/'));
+      default:  return m_loose(parseEscaped(false, false, c => /[ "!|&()]/.test(c)));
+      case '"': return m_exact(parseEscaped(true,  false, c => c=='"'));
+      case '/': return m_regex(parseEscaped(true,  true,  c => c=='/'));
       case '!': i++; return m_not(part());
       case '(':
         i++;
         let r = p_or();
         i++; // ')'
         return r;
-      default:
-        let val = "";
-        while (i<str.length) {
-          if (str[i] == '\\' && ++i < str.length) {
-            val+= str[i++];
-          } else if (!/[ "!|&()]/.test(str[i])) {
-            val+= str[i++];
-          } else {
-            break;
-          }
-        }
-        return m_loose(val);
     }
   }
   function p_and() {
