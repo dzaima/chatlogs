@@ -1,21 +1,21 @@
 package libMx;
 
-import org.json.JSONObject;
+import dzaima.utils.JSON.Obj;
 
 public class MxFmted {
   public final String body;
   public final String html;
   
-  public MxFmted(JSONObject o) {
+  public MxFmted(Obj o) {
     if (!o.has("body")) {
       body = "(deleted)";
       html = "(deleted)";
       return;
     }
-    body = o.getString("body");
+    body = o.str("body");
     String h;
-    if ("org.matrix.custom.html".equals(o.optString("format"))) h = o.getString("formatted_body");
-    else h = Tools.toHTML(body);
+    if ("org.matrix.custom.html".equals(o.str("format", ""))) h = o.str("formatted_body");
+    else h = Utils.toHTML(body);
     html = h;
   }
   

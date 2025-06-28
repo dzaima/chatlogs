@@ -1,99 +1,78 @@
 package libMx;
 
-import org.json.*;
-
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static dzaima.utils.JSON.*;
+
 public class MxLogin {
-  public MxServer s;
+  public final MxServer s;
   public final String uid;
-  public final String uidURI;
-  public String token;
+  public final String token;
   
   public MxLogin(MxServer s, String id, String mxToken) {
     this.s = s;
     this.uid = id;
     this.token = mxToken;
-    uidURI = Tools.toURI(uid);
   }
   
   public boolean valid() {
-    return !s.getJ("_matrix/client/r0/account/whoami?access_token="+token).has("errcode");
+    return !s.requestV3("account","whoami").token(token).get().runJ().has("errcode");
   }
   
   public MxUser user() {
     return s.user(uid);
   }
-  public String sendMessage(MxRoom r, MxFmt msg) {
-    JSONObject j = s.postJ(
-      "_matrix/client/r0/rooms/"+r.rid+"/send/m.room.message?access_token="+token,
-      "{" +
-        (msg.replyId==null?"":"\"m.relates_to\":{\"m.in_reply_to\":{\"event_id\":"+ Tools.toJSON(msg.replyId)+"}},") +
-        msg(msg.body.toString(), msg.html.toString()) +
-        "}"
-    );
-    if (s.handleError(j, "send message")) return null;
-    return j.getString("event_id");
-  }
+  
+  private static final AtomicLong txn_id = new AtomicLong();
+  public static String newTxnId() {
+    return (System.currentTimeMillis()%(long)1e12) + "_" + txn_id.getAndIncrement();
+  } 
+  
   public String sendContent(MxRoom r, String type, String content) {
-    JSONObject j = s.postJ("_matrix/client/r0/rooms/"+r.rid+"/send/"+type+"?access_token="+token, content);
+    Obj j = r.request("send",type,newTxnId()).token(token).put(content).runJ();
     if (s.handleError(j, "send message")) return null;
-    return j.getString("event_id");
+    return j.str("event_id");
+  }
+  public String sendMessage(MxRoom r, MxSendMsg msg) {
+    return sendContent(r, "m.room.message", msg.msgJSON());
   }
   public String editMessage(MxRoom r, String pid, MxFmt msg) { // ignores msg reply as reply target cannot be edited
-    String txt = msg.body.toString();
-    String htm = msg.html.toString();
-    JSONObject j = s.postJ(
-      "_matrix/client/r0/rooms/"+r.rid+"/send/m.room.message?access_token="+token,
-      "{" +
-        msg("* "+txt, "* "+htm)+"," +
-        "\"m.relates_to\":{\"rel_type\":\"m.replace\",\"event_id\":"+ Tools.toJSON(pid)+"}," +
-        "\"m.new_content\":{"+msg(txt,htm)+"}" +
-        "}"
-    );
-    if (s.handleError(j, "edit message")) return null;
-    return j.getString("event_id");
+    return sendContent(r, "m.room.message", msg.editJSON(pid));
   }
-  private static AtomicLong txn = new AtomicLong(ThreadLocalRandom.current().nextLong());
   public void deleteMessage(MxRoom r, String pid) {
-    JSONObject j = s.putJ("_matrix/client/r0/rooms/"+r.rid+"/redact/"+pid+"/"+txn.getAndIncrement()+"?access_token="+token, "{}");
+    Obj j = r.request("redact",pid,newTxnId()).token(token).put(Obj.E).runJ();
     s.handleError(j, "delete message");
   }
-  private String msg(String text, String html) {
-    return "\"msgtype\":\"m.text\", \"body\":"+Tools.toJSON(text)+",\"format\":\"org.matrix.custom.html\",\"formatted_body\":"+Tools.toJSON(html);
-  }
   
-  
-  public String event(MxRoom r, String type, String data) {
-    JSONObject j = s.putJ("_matrix/client/r0/rooms/"+r.rid+"/state/"+type+"?access_token="+token, data);
+  public String sendUserState(MxRoom r, String type, String data) {
+    Obj j = r.request("state", type, uid).token(token).put(data).runJ();
     if (s.handleError(j, "send "+type)) return null;
-    return j.getString("event_id");
+    return j.str("event_id");
   }
   
   
   public boolean join(MxRoom r) {
-    JSONObject j = s.postJ("_matrix/client/r0/rooms/"+r.rid+"/join?access_token="+token, "{}");
+    Obj j = r.request("join").token(token).post(Obj.E).runJ();
     return !s.handleError(j, "join room");
   }
   
-  private JSONArray deviceInfo;
-  public JSONArray deviceInfo() {
-    if (deviceInfo==null) deviceInfo = s.getJ("_matrix/client/r0/devices?access_token="+token).getJSONArray("devices");
+  private Arr deviceInfo;
+  public Arr deviceInfo() {
+    if (deviceInfo==null) deviceInfo = s.requestV3("devices").token(token).get().runJ().arr("devices");
     return deviceInfo;
   }
   
   public String device() {
-    JSONArray ds = deviceInfo();
-    return ds.length()==0? null : ds.getJSONObject(ds.length()-1).getString("device_id");
+    Arr ds = deviceInfo();
+    return ds.size()==0? null : ds.obj(ds.size()-1).str("device_id");
   }
   
-  public void nick(String nick) {
-    JSONObject j = s.putJ("_matrix/client/r0/profile/"+uidURI+"/displayname?access_token="+token, "{\"displayname\":"+Tools.toJSON(nick)+"}");
+  public void setGlobalNick(String nick) {
+    Obj j = s.requestV3("profile",uid,"displayname").token(token).put(Obj.fromKV("displayname", nick)).runJ();
     s.handleError(j, "set nick");
   }
   
-  public String nick(MxRoom r, String nick) {
-    return event(r, "m.room.member/"+uidURI, "{\"membership\":\"join\", \"displayname\":"+Tools.toJSON(nick)+"}");
+  public String setRoomNick(MxRoom r, String nick) {
+    return sendUserState(r, "m.room.member", Obj.fromKV("membership","join", "displayname",nick).toString());
   }
 }

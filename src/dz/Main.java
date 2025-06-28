@@ -1,9 +1,9 @@
 package dz;
 
+import dzaima.utils.JSON;
+import dzaima.utils.JSON.*;
 import libMx.*;
-import org.json.*;
 
-import org.json.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.*;
 
@@ -49,12 +49,15 @@ public class Main {
   
   
   public static void updateMatrix() throws IOException {
-    MxServer s = MxServer.of(Paths.get("mxToken"));
-  
+    MxLoginMgr login = new MxLoginMgr.MxFileLogin(Paths.get("mxToken"));
+    MxServer s = login.create();
+    login.login(s);
+    
     System.out.println("Syncing...");
-    JSONObject sync = s.sync(1);
-    String lastToken = sync.getString("next_batch");
-    JSONObject syncRooms = sync.getJSONObject("rooms").getJSONObject("join");
+    Obj sync = s.sync(MxServer.syncFilter(1, false, false));
+    String lastToken = sync.str("next_batch");
+    Obj syncRooms = sync.obj("rooms").obj("join");
+    Obj rf = MxRoom.roomEventFilter(true);
     
     int timeout = MX_SLEEP_MIN;
     
@@ -75,11 +78,11 @@ public class Main {
       }
       
       String currTok = lastToken;
-      ArrayList<JSONObject> newEvents = new ArrayList<>();
+      ArrayList<Obj> newEvents = new ArrayList<>();
       while (true) {
-        Tools.sleep(timeout);
+        Utils.sleep(timeout);
         timeout = Math.min(timeout+MX_SLEEP_INC, MX_SLEEP_MAX);
-        MxRoom.Chunk c = r.beforeTok(currTok, endTok, MX_BATCH);
+        MxRoom.Chunk c = r.beforeTok(rf, currTok, endTok, MX_BATCH);
         if (c.events.size()==0) break;
         System.out.println("Got "+c.events.size()+" messages; first is at "+c.events.get(0).time);
         currTok = c.eTok;
@@ -94,20 +97,20 @@ public class Main {
       }
       System.out.println("Finished room");
       for (int i = newEvents.size()-1; i>=0; i--) {
-        JSONObject c = newEvents.get(i);
+        Obj c = newEvents.get(i);
         lns.add(c.toString(-1));
       }
   
-      JSONArray arr = syncRooms.getJSONObject(roomID).getJSONObject("state").getJSONArray("events");
-      JSONObject nameMap = new JSONObject();
+      Arr arr = syncRooms.obj(roomID).obj("state").arr("events");
+      Obj nameMap = new Obj();
       for (Object c : arr) {
-        JSONObject o = (JSONObject) c;
-        String type = o.getString("type");
+        Obj o = (Obj) c;
+        String type = o.str("type");
         if (type.equals("m.room.member")) {
-          JSONObject ct = o.getJSONObject("content");
-          if (ct.getString("membership").equals("join")) {
-            String sender = o.getString("sender");
-            nameMap.put(sender, ct.optString("displayname", sender.split(":")[0].substring(1)));
+          Obj ct = o.obj("content");
+          if (ct.str("membership").equals("join")) {
+            String sender = o.str("sender");
+            nameMap.put(sender, new JSON.Str(ct.str("displayname", sender.split(":")[0].substring(1))));
           }
         }
       }
@@ -144,49 +147,51 @@ public class Main {
     int lastId;
     if (Files.exists(path)) {
       lines = Files.readAllLines(path);
-      lastId = new JSONObject(lines.get(lines.size()-1)).getInt("msgID");
+      lastId = JSON.parseObj(lines.get(lines.size()-1)).getInt("msgID");
     } else {
       lines = new ArrayList<>();
       lastId = -1;
     }
-    String res = Tools.post("https://chat.stackexchange.com/rooms/52405/the-apl-orchard", new byte[0]);
+    Utils.RequestParams p0 = new Utils.RequestParams(null);
+    
+    String res = Utils.post(p0, "https://chat.stackexchange.com/rooms/52405/the-apl-orchard", new byte[0]).okString();
     Matcher match = FKEY_PATTERN.matcher(res);
     match.find();
     byte[] fkey = ("fkey="+match.group(1)).getBytes(StandardCharsets.UTF_8);
     
-    int currId = new JSONObject(Tools.post("https://chat.stackexchange.com/chats/"+roomid+"/events?mode=Messages&msgCount=1", fkey)).getJSONArray("events").getJSONObject(0).getInt("message_id");
+    int currId = JSON.parseObj(Utils.post(p0, "https://chat.stackexchange.com/chats/"+roomid+"/events?mode=Messages&msgCount=1", fkey).okString()).arr("events").obj(0).getInt("message_id");
     
     System.out.println("Goal: "+currId+"→"+lastId);
     ArrayList<String> reverse = new ArrayList<>();
     while (currId > lastId) {
-      Tools.sleep(SE_SLEEP);
-      String p = Tools.post("https://chat.stackexchange.com/chats/"+roomid+"/events?before="+currId+"&mode=Messages&msgCount="+SE_BATCH, fkey);
-      JSONObject o = new JSONObject(p);
-      JSONArray e = o.getJSONArray("events");
-      if (e.isEmpty()) break;
-      int newId = e.getJSONObject(0).getInt("message_id");
-      System.out.println(currId+"→"+newId+": "+e.length()+" messages");
+      Utils.sleep(SE_SLEEP);
+      String p = Utils.post(p0, "https://chat.stackexchange.com/chats/"+roomid+"/events?before="+currId+"&mode=Messages&msgCount="+SE_BATCH, fkey).okString();
+      Obj o = JSON.parseObj(p);
+      Arr e = o.arr("events");
+      if (e.size()==0) break;
+      int newId = e.obj(0).getInt("message_id");
+      System.out.println(currId+"→"+newId+": "+e.size()+" messages");
       currId = newId;
-      for (int i = e.length()-1; i>=0; i--) {
-        JSONObject m = e.getJSONObject(i);
+      for (int i = e.size()-1; i>=0; i--) {
+        Obj m = e.obj(i);
         
-        int ts = m.optInt("time_stamp", -1);
-        int messageID = m.optInt("message_id", -1);
+        int ts = m.getInt("time_stamp", -1);
+        int messageID = m.getInt("message_id", -1);
         if (messageID<=lastId) continue;
-        int replyID = m.optInt("parent_id", -1);
-        boolean isReply = m.optBoolean("show_parent");
-        String username = m.optString("user_name", "-999");
-        int userID = m.optInt("user_id", -1);
-        int starCount = m.optInt("message_stars", 0);
-        boolean edited = m.optInt("message_edits", 0)>0;
-        String html = m.optString("content", "");
+        int replyID = m.getInt("parent_id", -1);
+        boolean isReply = m.bool("show_parent", false);
+        String username = m.str("user_name", "-999");
+        int userID = m.getInt("user_id", -1);
+        int starCount = m.getInt("message_stars", 0);
+        boolean edited = m.getInt("message_edits", 0)>0;
+        String html = m.str("content", "");
         Element body = Jsoup.parse(html).body();
         String text = body.text();
         boolean partial = body.childrenSize()>0 && body.child(0).hasClass("partial");
         if (partial) {
           System.out.println("getting full source of "+messageID);
-          Tools.sleep(SE_SLEEP);
-          text = Tools.get("https://chat.stackexchange.com/messages/"+roomid+"/"+messageID);
+          Utils.sleep(SE_SLEEP);
+          text = Utils.get(p0, "https://chat.stackexchange.com/messages/"+roomid+"/"+messageID).okString();
           html = Entities.escape(text);
         }
         
@@ -211,12 +216,12 @@ public class Main {
     Files.write(path, lines);
   }
   static String jk(String k, String v) {
-    return JSONObject.quote(k)+": "+JSONObject.quote(v);
+    return JSON.quote(k)+": "+JSON.quote(v);
   }
   static String jk(String k, int v) {
-    return JSONObject.quote(k)+": "+v;
+    return JSON.quote(k)+": "+v;
   }
   static String jk(String k, boolean v) {
-    return JSONObject.quote(k)+": "+v;
+    return JSON.quote(k)+": "+v;
   }
 }
