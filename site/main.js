@@ -314,7 +314,6 @@ function parseSearch(str) {
       }
     }
     if (surrounded && i < str.length) i++;
-    console.log(val);
     return val;
   }
   function skip() {
