@@ -119,6 +119,14 @@ pre code {
   line-height: 1.8;
 }
 
+div.CodeMirror-measure {
+  display: none;
+}
+.CodeMirror-code > pre {
+  border: none;
+  margin: 0;
+}
+
 
 p {
   margin-block: 0;

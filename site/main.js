@@ -265,6 +265,7 @@ async function loadTA(path, name, roomRef, link, next) {
     if (msg.replyID !== undefined) {
       msg.html = replyPrefix(room, msg) + msg.html;
     }
+    msg.html = msg.html.replace(/ draggable=\"true\"/g, "");
   });
   
   await finishRoom(room, next, c => new Date(c.date));
