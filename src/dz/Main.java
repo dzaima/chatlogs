@@ -37,7 +37,7 @@ public class Main {
   public static final int SE_BATCH = 9999; // SE limits to 500 but ¯\_(ツ)_/¯
   public static final int SE_SLEEP = 1000; // sleep time between API calls
   public static final String[][] seRooms = {
-    {"52405", "SE_orchard"},
+    // {"52405", "SE_orchard"},
     // {"90748", "SE_thektree"},
   };
   
