@@ -4,6 +4,7 @@ import dzaima.utils.JSON.Val;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 public class JSON {
   public static final Null NULL = new Null();
@@ -68,13 +69,13 @@ public class JSON {
     }
   }
   
-  public static String format(Val v, int indent) {
-    String r = format0(v, indent);
-    if (!r.equals(format0(JSON.parse(r), indent))) throw new AssertionError();
+  public static String format(Val v, int indent, boolean sortKeys) {
+    String r = format0(v, indent, sortKeys);
+    assert r.equals(format0(JSON.parse(r), indent, sortKeys));
     return r;
   }
-  private static String format0(Val v, int indent) {
-    Formatter f = new Formatter(indent);
+  private static String format0(Val v, int indent, boolean sortKeys) {
+    Formatter f = new Formatter(indent, sortKeys);
     f.add(v);
     return f.b.toString();
   }
@@ -82,7 +83,12 @@ public class JSON {
     StringBuilder b = new StringBuilder();
     final int indent;
     final boolean mini;
-    public Formatter(int indent) { this.indent = indent>0? indent : 0; mini = indent<0; }
+    final boolean sortKeys;
+    public Formatter(int indent, boolean sortKeys) {
+      this.indent = indent>0? indent : 0;
+      mini = indent<0;
+      this.sortKeys = sortKeys;
+    }
     int ci;
     void add(Val v) {
       if (v instanceof Num) fmtDouble(b, v.num());
@@ -92,11 +98,21 @@ public class JSON {
       else if (v instanceof Arr) {
         bulk('[', ']', v.arr().size(), v.arr(), c -> add(c));
       } else if (v instanceof Obj) {
-        bulk('{', '}', v.obj().size(), v.obj().entries(), c -> {
-          quote(b, c.k);
+        Iterable<Entry> es = v.obj().entries();
+        BiConsumer<String, Val> f = (key, val) -> {
+          quote(b, key);
           b.append(mini? ":" : ": ");
-          add(c.v);
-        });
+          add(val);
+        };
+        int size = v.obj().size();
+        if (sortKeys) {
+          ArrayList<Pair<String, Val>> es2 = new ArrayList<>();
+          for (Entry e : es) es2.add(new Pair<>(e.k, e.v));
+          es2.sort(Comparator.comparing(e -> e.a));
+          bulk('{', '}', size, es2, e -> f.accept(e.a, e.b));
+        } else {
+          bulk('{', '}', size, es, e -> f.accept(e.k, e.v));
+        }
       }
     }
     <T> void bulk(char s, char e, int sz, Iterable<T> it, Consumer<T> f) {
@@ -139,18 +155,19 @@ public class JSON {
     public Obj obj() { throw new RuntimeException("This isn't an object!"); }
     public boolean bool() { throw new RuntimeException("This isn't a boolean!"); }
     
-    public double num(double def) { throw new RuntimeException("This isn't a number!"); }
-    public String str(String def) { throw new RuntimeException("This isn't a string!"); }
-    public Arr arr(Arr def) { throw new RuntimeException("This isn't an array!"); }
-    public Obj obj(Obj def) { throw new RuntimeException("This isn't an object!"); }
-    public boolean bool(boolean def) { throw new RuntimeException("This isn't a boolean!"); }
+    // these methods with a default arg never error, i.e. can be used on untrusted JSON
+    public double num(double def) { return def; }
+    public String str(String def) { return def; }
+    public Arr arr(Arr def) { return def; }
+    public Obj obj(Obj def) { return def; }
+    public boolean bool(boolean def) { return def; }
     
-    public boolean isNum() { return this instanceof Num; }
-    public boolean isStr() { return this instanceof Str; }
-    public boolean isArr() { return this instanceof Arr; }
-    public boolean isObj() { return this instanceof Obj; }
-    public boolean isBool(){ return this instanceof Bool; }
-    public boolean isNull() { return false; }
+    public final boolean isNum()  { return this instanceof Num; }
+    public final boolean isStr()  { return this instanceof Str; }
+    public final boolean isArr()  { return this instanceof Arr; }
+    public final boolean isObj()  { return this instanceof Obj; }
+    public final boolean isBool() { return this instanceof Bool; }
+    public final boolean isNull() { return this == NULL; }
     
     public int asInt() { return (int)num(); }
     public int asInt(int def) { return (int)num(def); }
@@ -159,7 +176,7 @@ public class JSON {
     public long asLong(long def) { return this instanceof Num? (long)((Num)this).val : def; }
     
     public String toString() { return toString(-1); }
-    public String toString(int indent) { return JSON.format(this, indent); }
+    public String toString(int indent) { return JSON.format(this, indent, false); }
   }
   
   public static class Num extends Val {
@@ -171,7 +188,7 @@ public class JSON {
     public double num(double def) { return val; }
   }
   
-  public static class Str extends Val {
+  public static final class Str extends Val {
     public static final Str E = new Str("");
     public final String val;
     public Str(String val) { this.val = val; }
@@ -180,7 +197,7 @@ public class JSON {
     public String str(String def) { return val; }
   }
   
-  public static class Obj extends Val {
+  public static final class Obj extends Val {
     public static final Obj E = new Obj(new String[0], new Val[0]);
     private String[] ks;
     private Val[] vs;
@@ -318,7 +335,7 @@ public class JSON {
     public Iterator<Entry> iterator() { return this; }
   }
   
-  public static class Arr extends Val implements Iterable<Val> {
+  public static final class Arr extends Val implements Iterable<Val> {
     public static final Arr E = Arr.of();
     public final Val[] items;
     public Arr(Val[] items) { this.items = items; }
@@ -384,17 +401,11 @@ public class JSON {
   }
   
   private static final Null NOTFOUND = new Null();
-  public static class Null extends Val {
+  public static final class Null extends Val {
     private Null() { }
-    public double num(double def) { return def; }
-    public String str(String def) { return def; }
-    public Arr    arr(Arr    def) { return def; }
-    public Obj    obj(Obj    def) { return def; }
-    public boolean bool(boolean def) { return def; }
-    public boolean isNull() { return true; }
   }
   
-  public static class Bool extends Val {
+  public static final class Bool extends Val {
     boolean val;
     private Bool(boolean val) { this.val = val; }
     
@@ -496,6 +507,8 @@ public class JSON {
               }
               r.append((char)v);
             } else throw new JSONException("Unknown escape \\"+n);
+          } else if (c<=31) {
+            throw new JSONException("Codepoints below \\u001F must be escaped");
           } else r.append(c);
         }
         return new Str(r.toString());

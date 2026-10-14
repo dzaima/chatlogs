@@ -102,7 +102,7 @@ public class Main {
       }
   
       Arr arr = syncRooms.obj(roomID).obj("state").arr("events");
-      Obj nameMap = new Obj();
+      Obj nameMap = JSON.parseObj(lns.get(0));
       for (Object c : arr) {
         Obj o = (Obj) c;
         String type = o.str("type");
@@ -114,7 +114,7 @@ public class Main {
           }
         }
       }
-      lns.set(0, nameMap.toString(-1));
+      lns.set(0, JSON.format(nameMap, -1, true));
       
       lns.add(lastToken);
       Files.write(path, lns);
